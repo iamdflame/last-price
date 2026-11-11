@@ -60,7 +60,9 @@ def parse_args(rest: list[str]) -> argparse.Namespace:
     ap.add_argument("--start", type=int, default=0, help="start at this duel number (to resume or extend a run)")
     ap.add_argument("--csv", default="", help="CSV path (default: plugin data dir, bench/<time>.csv)")
     ap.add_argument("--md", default="", help="Markdown summary path (default: next to the CSV)")
-    ap.add_argument("--item", default="")
+    ap.add_argument("--item", default="", help="one of your items (default: the demo item, its own throwaway floor)")
+    ap.add_argument("--real-item", action="store_true",
+                    help="allow --item to name a real item (its floor goes into the stock arm's prompt)")
     return ap.parse_args(rest)
 
 
@@ -163,9 +165,9 @@ def render(summary: dict, *, floor: float, ask: float, budgets: str, n: int, buy
 
 def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str:
     a = parse_args(rest)
-    item = rt.store.item(a.item or None)
-    if item is None:
-        return 'Nothing for sale yet. First: hermes lastprice sell "<item>" ask <price> floor <price>'
+    item, error = duel.pick_item(rt, a.item, a.real_item, True, out)
+    if error:
+        return error
     if rt.llm is None:
         return "No model access (ctx.llm unavailable): run `hermes lastprice doctor`."
     try:

@@ -152,6 +152,8 @@ def start(rt, rest: list[str], runner=None) -> str:
     item = rt.store.item(" ".join(a.item) if a.item else None)
     if item is None:
         return 'No such item. First: hermes lastprice sell "<item>" ask <price> floor <price>'
+    if item.status == "demo":
+        return "The demo item's floor is public in the docs: list a real item for the challenge with `sell`."
     old = current(rt)
     if old and not old.get("ended"):
         return f"A challenge is already running on {old['platform']} ({old['item']}). End it first: challenge end"

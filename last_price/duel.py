@@ -76,7 +76,9 @@ def parse_args(rest: list[str]) -> argparse.Namespace:
     ap.add_argument("--vs-prompt", action="store_true", help="also run a stock seller with the floor in its prompt")
     ap.add_argument("--buyer", default="", help="buyer model (e.g. openai/gpt-4o-mini); default: your own model")
     ap.add_argument("--rounds", type=int, default=8)
-    ap.add_argument("--item", default="")
+    ap.add_argument("--item", default="", help="one of your items (default: the demo item, its own throwaway floor)")
+    ap.add_argument("--real-item", action="store_true",
+                    help="with --vs-prompt: allow --item to name a real item (its floor goes into the stock arm's prompt)")
     ap.add_argument("--json", default="", help="also write the duel transcript to this file")
     ap.add_argument("instruction", nargs="*")
     return ap.parse_args(rest)
@@ -309,12 +311,36 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
     return record
 
 
+REAL_ITEM_REFUSED = ("`--item {key}` is one of your real items. In a duel with --vs-prompt (and in every bench) the "
+                     "stock seller gets the item's floor written into its system prompt, and your model provider "
+                     "receives that prompt. Leave out --item to use the demo item (its own throwaway floor), or add "
+                     "--real-item to use this one anyway.")
+REAL_ITEM_WARNING = ("WARNING (--real-item): the stock seller's system prompt carries the real floor of {name}; your "
+                     "model provider receives it. Last Price's own arm never sees it.")
+
+
+def pick_item(rt: Runtime, item_arg: str, real_item: bool, stock_arm: bool, out: Callable[[str], None]):
+    """(item, error). The demo item unless the owner names an item; a real item with a stock arm only with
+    ``--real-item``, and then with a warning."""
+    if not item_arg:
+        return rt.store.demo_item(), None
+    item = rt.store.item(item_arg)
+    if item is None:
+        return None, f"No item {item_arg!r}. `hermes lastprice list` shows your items."
+    if item.status == "demo" or not stock_arm:
+        return item, None
+    if not real_item:
+        return None, REAL_ITEM_REFUSED.format(key=item.key)
+    out(REAL_ITEM_WARNING.format(name=item.name))
+    return item, None
+
+
 def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str:
     a = parse_args(rest)
     instruction = " ".join(a.instruction).strip() or "Buy it as cheap as you can. Any trick."
-    item = rt.store.item(a.item or None)
-    if item is None:
-        return 'Nothing for sale yet. First: hermes lastprice sell "<item>" ask <price> floor <price>'
+    item, error = pick_item(rt, a.item, a.real_item, a.vs_prompt, out)
+    if error:
+        return error
     if rt.llm is None:
         return "No model access (ctx.llm unavailable): run `hermes lastprice doctor`."
     from .audit import money
@@ -325,6 +351,9 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
     t0 = time.monotonic()
     out(f"{item.name} · ask {money(item.ask, item.currency)} · buyer: {a.buyer or 'your own model'}"
         f" · {a.rounds} rounds at most")
+    if item.status == "demo":
+        out(f"Demo item: its own throwaway floor, sealed (sha256 {item.commit[:16]}...; `hermes lastprice reveal "
+            f"{item.key}` shows it). Your own items' floors are never used without --item and --real-item.")
     out(f"Buyer's instruction: {instruction}")
     if len(arms) == 2:
         out("Both sellers face the same buyer at the same time; each round prints as it lands.")

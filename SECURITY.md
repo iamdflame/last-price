@@ -26,7 +26,12 @@ hidden stop that sits above the floor. See `docs/THREAT_MODEL.md` for the attack
 * A rewrite request goes to the same model through `ctx.llm`: the buyer's message, the draft and the
   current counter. Never the floor or the stop.
 * In a duel, the buyer's instruction and the seller's replies go to the buyer model.
-* No telemetry. No payment provider is called in 0.1.0 (pay links are placeholders).
+* In a duel with `--vs-prompt` and in every bench, the stock seller's system prompt carries the duel item's
+  floor, so the model provider receives it. By default the duel item is a demo item with its own throwaway floor;
+  one of your items is used only with `--item <id> --real-item`, which prints a warning.
+* `challenge start` changes gateway settings through `hermes config set` (Telegram open access, a
+  Last-Price-only Telegram toolset, owner-only slash commands); `challenge end` turns open access off.
+* No telemetry. No payment provider is called in 0.1.x (pay links are placeholders).
 
 ## The duel's child process
 

@@ -17,6 +17,9 @@ from typing import Any, Optional
 from . import policy
 
 SCHEMA = 1
+# The duel's and bench's default item: its own throwaway floor, never one of the owner's items. The
+# stock arm writes the duel item's floor into a system prompt the model provider receives.
+DEMO = {"name": "iPhone 13, 128GB (demo)", "ask": 420.0, "floor": 360.0, "extras": ["a case"]}
 
 
 class MemoryState:
@@ -64,7 +67,7 @@ class Item:
     commit: str
     currency: str = "USD"
     extras: list = field(default_factory=list)
-    status: str = "open"  # open | reserved | sold
+    status: str = "open"  # open | reserved | sold | demo (the duel's throwaway item: never sold in chats)
     created: float = 0.0
 
     def public(self) -> dict:
@@ -89,7 +92,10 @@ class Store:
         if not items:
             return None
         if not key_or_name:
-            open_items = [i for i in items.values() if i.status == "open"] or list(items.values())
+            real = [i for i in items.values() if i.status != "demo"]
+            if not real:
+                return None
+            open_items = [i for i in real if i.status == "open"] or real
             return max(open_items, key=lambda i: i.created)
         k = slug(key_or_name)
         if k in items:
@@ -111,6 +117,16 @@ class Store:
         raw = self.backend.get("items", {}) or {}
         raw[it.key] = dict(it.__dict__)
         self.backend.set("items", raw)
+        return it
+
+    def demo_item(self) -> Item:
+        """The demo item (created on first use with its own floor, salt and commitment)."""
+        key = slug(DEMO["name"])
+        it = self.items().get(key)
+        if it is None:
+            it = self.sell(DEMO["name"], DEMO["ask"], DEMO["floor"], extras=list(DEMO["extras"]))
+            self.set_status(it.key, "demo")
+            it = self.items()[it.key]
         return it
 
     def set_status(self, key: str, status: str) -> None:

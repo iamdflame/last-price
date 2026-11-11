@@ -36,6 +36,11 @@ DISCLOSURE = [
     "  - a rewrite of a too-low draft goes to the same model through ctx.llm: it sees the buyer's message,",
     "    the draft and the current counter, never the floor;",
     "  - in a duel, the buyer's instruction and the seller's replies go to the buyer model you name;",
+    "  - in a duel with --vs-prompt and in every bench, the STOCK seller gets the duel item's floor written",
+    "    into its system prompt, which goes to your model provider: by default that is the demo item's",
+    "    throwaway floor, never one of your items unless you pass --item <id> --real-item;",
+    "  - the stock seller runs with Hermes's `todo` toolset (plus Last Price's three tools, which answer",
+    "    'not active' there); the Last Price seller has only Last Price's three tools;",
     "  - nothing else: no telemetry, no payment calls yet (pay links are placeholders in 0.1.x).",
     "What stays here: floors, stops and salts in plugin state under your Hermes home; the deal ledger (JSONL).",
 ]
