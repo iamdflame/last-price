@@ -79,8 +79,9 @@ floor, where the simulation's own price reader found none ([run 2](docs/simulati
 
 You need Hermes 0.23.1 or later with a model set (`hermes model`). In a Hermes home you already use, this takes
 about two minutes. In a brand-new home add a one-time setup: the first `enable` builds Hermes's own Python
-environment for that home, which took 104 to 177 s in [our timed runs](docs/JUDGE-RUN.md), and about 6 minutes
-in all for an outside tester whose first try timed out (see "If something goes wrong"). Then:
+environment for that home, which took 104 to 177 s in [our timed runs](docs/JUDGE-RUN.md). When PyPI is slow
+the first try can time out and need a retry (see "If something goes wrong"): our run 4 took about 4.5 minutes in
+all, and an outside tester's fresh home about 6. Then:
 
 Until the catalog entry is merged, install straight from GitHub with `hermes plugins install iamdflame/last-price`.
 
@@ -116,8 +117,9 @@ and every host Last Price contacts. What we hit on first tries ([three timed run
 
 * **`enable` sits on "Installing Python dependencies" for about three minutes.** In a brand-new Hermes home,
   the first plugin you enable makes Hermes set up its own Python environment for that home; here it took
-  104 to 177 s. It happens once per home (a second enable took 2 s). If it stalls on downloads, retry with
-  `UV_HTTP_TIMEOUT=300`.
+  104 to 177 s. It happens once per home (a second enable took 2 s). If it stalls or fails on downloads
+  ("operation timed out"), run `hermes plugins enable last-price` again, with `UV_HTTP_TIMEOUT=300` set; in
+  [run 4](docs/JUDGE-RUN.md) the first try timed out after 74 s and the retry passed in 80 s.
 * **"Non-interactive session: capabilities NOT granted".** Harmless: the duel's buyer then runs on your own
   model. To let `--buyer MODEL` pick another one, run `hermes plugins enable last-price` in a terminal you
   can type in and answer `y`.
