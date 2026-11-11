@@ -85,6 +85,16 @@ def asks_for_lower(buyer_text: str) -> bool:
 
 MEET_STEPS = 2  # a buyer at or above the stop line within this many steps of the counter is met
 HOLD_FROM_TURN = 3  # from this buyer message on, a buyer who holds still gets a small concession
+OPENING_SHARE = 0.025  # the opening anchor: 2.5% of the ask (at least one step), a function of the ask alone
+
+
+def opening_price(ask: float) -> float:
+    """The counter after the buyer's first message, at most: the ask less a small, fixed share of the
+    ask, rounded UP to the step ($410 on a $420 item). It reads neither the floor nor the stop (only
+    the stop line clamps it, as it clamps every counter), so it tells a buyer nothing about either:
+    every item with the same ask opens at the same price."""
+    step = step_of(ask)
+    return round_up(ask - max(step, ask * OPENING_SHARE), step)
 
 
 def on_buyer_message(neg: Negotiation, offers: list, stop: float) -> Negotiation:
@@ -96,6 +106,9 @@ def on_buyer_message(neg: Negotiation, offers: list, stop: float) -> Negotiation
       time concession (25% of the gap, at least one step), so a stubborn buyer who can afford the
       stop still sees the price move before they walk.
     * The buyer is at or above the stop line and within two steps of the counter: meet them.
+    * The buyer's first message, with or without a number, opens the price at no more than
+      :func:`opening_price` (a fixed share of the ask), so "is it still available?" no longer gets
+      the full ask back.
 
     Never below the stop line (the stop rounded UP to the step), never rising, always on the step.
     The counter is a function of the ask, the stop line, the turn and the buyer's own numbers, so the
@@ -123,13 +136,17 @@ def on_buyer_message(neg: Negotiation, offers: list, stop: float) -> Negotiation
         neg.counter = target  # close enough, and above the stop: meet the buyer
         return neg
     if moved:
-        share = min(0.85, 0.25 + 0.15 * (neg.moves - 1))
+        share: Optional[float] = min(0.85, 0.25 + 0.15 * (neg.moves - 1))
     elif neg.turn >= HOLD_FROM_TURN:
         share = 0.25
     else:
-        return neg  # early, and the buyer did not move: neither do we
-    concession = max(step, round_up(gap * share, step))
-    neg.counter = max(target, line, round_up(neg.counter - concession, step))
+        share = None  # early, and the buyer did not move: neither do we (beyond the opening anchor)
+    new = neg.counter
+    if share is not None:
+        new = round_up(neg.counter - max(step, round_up(gap * share, step)), step)
+    if neg.turn == 1:
+        new = min(new, opening_price(neg.ask))
+    neg.counter = min(neg.counter, max(target, line, new))
     return neg
 
 

@@ -38,7 +38,10 @@ In a guarded session, each turn:
 
 ## The policy
 
-Counter starts at the ask. When the buyer's best offer rises, the counter concedes
+Counter starts at the ask. The buyer's first message, with or without a number, opens it at no more than
+the opening anchor, round_up(ask - max(step, 2.5% of the ask)) ($410 at $420): a function of the ask alone,
+clamped only by round_up(stop) like every counter, so every item with the same ask opens at the same price
+(0.1.2; before, "is it still available?" got the full ask back). When the buyer's best offer rises, the counter concedes
 max(step, round_up(gap x share)) toward max(round_up(stop), round_up(best)), with share 25% on the first
 move, then 40%, 55%, 70%, capped at 85%. From the buyer's third message, a message that does not raise the
 offer still earns a time concession of 25% of the gap (at least one step). A buyer at or above

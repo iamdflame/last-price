@@ -133,7 +133,7 @@ def test_an_amount_above_the_ask_is_not_a_price_for_this_item():
     """A live bench duel: 'two phones for $650' was accepted as a $650 sale of one phone."""
     neg = policy.start(420)
     policy.on_buyer_message(neg, [650], 366.4)
-    assert policy.decide_offer(neg, 650, 366.4) == (False, 420.0)
+    assert policy.decide_offer(neg, 650, 366.4) == (False, 410.0)  # the opening anchor, not a sale
     assert neg.offers_used == 0 and neg.sold_at is None
 
 
@@ -157,3 +157,48 @@ def test_asking_for_lower_is_not_agreeing():
     assert not policy.asks_for_lower("Would you take $365?")
     assert not policy.asks_for_lower("OK, $390 works. ACCEPT $390")
     assert not policy.asks_for_lower("I can't go lower than $380, deal?")
+
+
+# ---- the opening anchor (0.1.2): a first message with no number no longer gets the full ask back ----
+
+def test_a_first_message_with_no_number_opens_below_the_ask():
+    neg = policy.start(420)
+    policy.on_buyer_message(neg, [], 366.4)  # "Hi, is the iPhone still available?"
+    assert neg.counter == 410 == policy.opening_price(420)
+    policy.on_buyer_message(neg, [], 366.4)  # message 2, still no number: too early to move again
+    assert neg.counter == 410
+
+
+def test_the_opening_reads_neither_the_floor_nor_the_stop():
+    # every stop a $420 item can draw (floors 300-380, 5-15% margins) opens at the same price
+    rng = random.Random(3)
+    openings = set()
+    for _ in range(300):
+        floor = rng.uniform(300, 380)
+        neg = policy.start(420)
+        policy.on_buyer_message(neg, [], policy.draw_stop(420, floor, rng))
+        openings.add(neg.counter)
+    assert openings == {410.0}
+
+
+def test_the_opening_never_goes_below_the_stop_line():
+    neg = policy.start(100)  # floor 99: the stop line is 100, above the $97 opening
+    stop = policy.draw_stop(100, 99, random.Random(1))
+    policy.on_buyer_message(neg, [], stop)
+    assert neg.counter >= policy.round_up(stop, policy.step_of(100))
+
+
+def test_a_first_offer_still_concedes_with_the_buyer_never_below_their_offer():
+    stop = 366.4
+    a, b = policy.start(420), policy.start(420)
+    policy.on_buyer_message(a, [300], stop)  # a first offer: the usual 25% of the gap
+    policy.on_buyer_message(b, [415], stop)  # a first offer just under the ask: met at the buyer's price, never below it
+    assert a.counter == 405
+    assert b.counter == 415
+
+
+def test_the_opening_scales_with_the_ask_and_stays_on_the_step():
+    for ask in (40, 99, 420, 1200, 4500, 12000):
+        o = policy.opening_price(ask)
+        step = policy.step_of(ask)
+        assert o < ask and o % step == 0 and ask - o <= max(step, ask * policy.OPENING_SHARE) + step

@@ -12,7 +12,7 @@ from .runtime import Runtime
 from .state import MemoryState
 from .tools import EXTRA_SCHEMA, ITEMS_SCHEMA, OFFER_SCHEMA, TOOLSET, make_tools
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 def build_runtime(ctx: Any) -> Runtime:
@@ -49,7 +49,7 @@ def register(ctx: Any) -> None:
 
     def setup(sub: argparse.ArgumentParser) -> None:
         sub.add_argument("lp_args", nargs=argparse.REMAINDER, help="sell | list | pause | resume | duel | bench | report | "
-                                                                    "reveal | doctor | owner | shop")
+                                                                    "reveal | doctor | owner | shop | challenge")
         sub.set_defaults(func=cli)
 
     def cli(args: argparse.Namespace) -> int:
@@ -63,4 +63,4 @@ def register(ctx: Any) -> None:
 
     ctx.register_cli_command("lastprice", help="Last Price: haggle above a floor the model never sees",
                              setup_fn=setup, handler_fn=cli,
-                             description="sell, list, pause, resume, duel, bench, report, reveal, doctor")
+                             description="sell, list, pause, resume, duel, bench, report, reveal, doctor, challenge")
