@@ -1,0 +1,22 @@
+# DRAFT entry for hermes-agent/plugin-catalog/ (not submitted). Fill repo, sha and maintainer at submission.
+name: last-price
+repo: https://github.com/OWNER/last-price          # TBD
+sha: 0000000000000000000000000000000000000000      # TBD: the reviewed 40-character commit
+subdir: ""
+description: Haggles with your buyers in chat and closes above a floor its own model never sees.
+maintainer: OWNER                                   # TBD
+tier: community
+category: tools
+requires_hermes: ">=0.23.1"
+version: "0.1.0"
+readme: true
+platforms: []
+title: Last Price
+known_issues:
+  - "Pay links are placeholders in 0.1.0 (no payment provider is called)."
+  - "Messaging deal chats are opt-in per platform (hermes lastprice shop on <platform>) and untested live in 0.1.0."
+capabilities:
+  provides_tools: [lastprice_items, lastprice_offer, lastprice_extra]
+  provides_hooks: [pre_llm_call, pre_tool_call, transform_llm_output]
+  provides_middleware: []
+  requires_env: []

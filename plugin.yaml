@@ -1,0 +1,21 @@
+name: last-price
+version: "0.1.0"
+description: "Lets Hermes haggle with buyers in chat while the plugin, not the model, owns every price that leaves: floors are set only by the owner's /lastprice or `hermes lastprice` command, kept in plugin state, and never shown to the model; every deal reply is held and checked, and one offering less is rewritten before anyone sees it. Includes `hermes lastprice duel --vs-prompt`, a side-by-side against a seller with the floor in its prompt."
+author: "Last Price authors"
+license: MIT
+homepage: "TBD"
+requires_hermes: ">=0.23.1"
+manifest_version: 2
+api_version: 1
+tags: [commerce, negotiation, messaging, telegram, whatsapp]
+provides_tools:
+  - lastprice_items
+  - lastprice_offer
+  - lastprice_extra
+provides_hooks:
+  - pre_llm_call
+  - pre_tool_call
+  - transform_llm_output
+capabilities:
+  - llm.model_override
+  - llm.provider_override

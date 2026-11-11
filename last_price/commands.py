@@ -1,0 +1,182 @@
+"""``/lastprice`` (any chat the owner owns) and ``hermes lastprice`` (a terminal).
+
+The only ways to set a floor. A plugin command is dispatched before any agent turn, so its text
+never reaches a model (docs/SEAMS.md, check a). On a messaging platform only an owner id added with
+``hermes lastprice owner add <platform>:<user_id>`` may use it; core's ``allow_admin_from`` slash
+policy applies on top.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import shlex
+from typing import Any, Callable, Optional
+
+from . import audit, report
+from .runtime import LOCAL_SURFACES, Runtime
+from .state import commitment
+
+USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
+  sell "<item>" ask <price> floor <price> [currency GHS] [extras "case; free delivery"]
+  list                     items, asks and floor commitments (never the floor)
+  pause | resume           stop or restart every deal
+  duel [--vs-prompt] [--buyer MODEL] [--rounds N] "<instruction>"   (terminal only)
+  report [--duel ID] [--last N]   each deal turn: the draft beside what was sent
+  reveal <item>            the floor and salt, checked against the commitment (local only)
+  owner add <platform>:<user_id> | shop on|off <platform> | doctor"""
+
+DISCLOSURE = [
+    "What leaves this machine:",
+    "  - buyer messages and Hermes's draft replies go to your model provider (as in any Hermes chat);",
+    "  - a rewrite of a too-low draft goes to the same model through ctx.llm: it sees the buyer's message,",
+    "    the draft and the current counter, never the floor;",
+    "  - in a duel, the buyer's instruction and the seller's replies go to the buyer model you name;",
+    "  - nothing else: no telemetry, no payment calls yet (pay links are placeholders in 0.1.0).",
+    "What stays here: floors, stops and salts in plugin state under your Hermes home; the deal ledger (JSONL).",
+]
+
+_NUM = re.compile(r"[-+]?\d+(?:[.,]\d+)?")
+
+
+def _num(tok: str) -> float:
+    m = _NUM.search(tok.replace(",", "") if tok.count(",") and "." not in tok else tok)
+    if not m:
+        raise ValueError(f"not a price: {tok!r}")
+    return float(m.group(0).replace(",", "."))
+
+
+def parse_sell(rest: list[str]) -> dict:
+    """``"<name>" ask 420 floor 360 [currency GHS] [extras "a; b"]`` -> fields."""
+    out: dict[str, Any] = {"extras": [], "currency": "USD"}
+    name_parts: list[str] = []
+    i = 0
+    while i < len(rest):
+        tok = rest[i]
+        low = tok.lower()
+        if low in ("ask", "floor", "currency", "extras", "extra") and i + 1 < len(rest):
+            val = rest[i + 1]
+            if low == "ask":
+                out["ask"] = _num(val)
+            elif low == "floor":
+                out["floor"] = _num(val)
+            elif low == "currency":
+                out["currency"] = val.upper()
+            else:
+                out["extras"] = [e.strip() for e in re.split(r"[;|]", val) if e.strip()]
+            i += 2
+            continue
+        name_parts.append(tok)
+        i += 1
+    out["name"] = " ".join(name_parts).strip().strip('"')
+    if not out["name"] or "ask" not in out or "floor" not in out:
+        raise ValueError('expected: sell "<item>" ask <price> floor <price>')
+    return out
+
+
+def is_owner(rt: Runtime, platform: str, source: Any) -> bool:
+    if (platform or "").lower() in LOCAL_SURFACES:
+        return True
+    user_id = getattr(source, "user_id", None) if source is not None else None
+    return bool(user_id) and f"{platform.lower()}:{user_id}" in rt.store.owners()
+
+
+def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
+        duel_runner: Optional[Callable[[list[str]], str]] = None) -> str:
+    """Dispatch one ``/lastprice`` or ``hermes lastprice`` command line; returns the reply."""
+    if not is_owner(rt, platform, source):
+        return "Only the shop owner can use /lastprice here."
+    try:
+        parts = shlex.split(text or "", posix=True)
+    except ValueError as exc:
+        return f"Could not parse that: {exc}"
+    if not parts:
+        return USAGE
+    cmd, rest = parts[0].lower(), parts[1:]
+    local = (platform or "").lower() in LOCAL_SURFACES
+    try:
+        if cmd == "sell":
+            f = parse_sell(rest)
+            it = rt.store.sell(f["name"], f["ask"], f["floor"], currency=f["currency"], extras=f["extras"])
+            return (f"Listed {it.name} at {audit.money(it.ask, it.currency)} (item id: {it.key}).\n"
+                    f"Floor sealed. Commitment: sha256 {it.commit}\n"
+                    "No model, tool result, prompt or log will carry it. Check it later with "
+                    f"`hermes lastprice reveal {it.key}`.")
+        if cmd == "list":
+            items = rt.store.items()
+            if not items:
+                return 'No items yet. Add one: hermes lastprice sell "<item>" ask <price> floor <price>'
+            rows = [f"{i.key:24} {audit.money(i.ask, i.currency):>10}  {i.status:8} commit {i.commit[:16]}..."
+                    for i in items.values()]
+            state = "open" if rt.store.shop_open() else "PAUSED"
+            return f"Shop: {state}\n" + "\n".join(rows)
+        if cmd == "pause":
+            rt.store.set_shop_open(False)
+            return "Paused: every deal chat now gets a holding message until you run resume."
+        if cmd == "resume":
+            rt.store.set_shop_open(True)
+            return "Resumed: deal chats are open."
+        if cmd == "owner":
+            if len(rest) == 2 and rest[0] == "add" and re.fullmatch(r"[a-z0-9_]+:[^\s]+", rest[1]):
+                if not local:
+                    return "Add owners from a terminal: hermes lastprice owner add <platform>:<user_id>"
+                rt.store.add_owner(rest[1])
+                return f"Owner added: {rest[1]}"
+            return "Usage: owner add <platform>:<user_id>"
+        if cmd == "shop":
+            if len(rest) == 2 and rest[0] in ("on", "off") and re.fullmatch(r"[a-z0-9_]+", rest[1]):
+                if not local:
+                    return "Change shop platforms from a terminal."
+                plats = set(rt.store.backend.get("shop_platforms", []) or [])
+                (plats.add if rest[0] == "on" else plats.discard)(rest[1])
+                rt.store.backend.set("shop_platforms", sorted(plats))
+                return f"Shop platforms: {', '.join(sorted(plats)) or 'none'} (non-owner chats there haggle)."
+            return "Usage: shop on|off <platform>"
+        if cmd == "report":
+            ap = argparse.ArgumentParser(prog="report", add_help=False)
+            ap.add_argument("--duel")
+            ap.add_argument("--last", type=int, default=12)
+            a = ap.parse_args(rest)
+            return report.render(rt.ledger.read(), duel=a.duel, last=a.last)
+        if cmd == "reveal":
+            if not local:
+                return "Reveal only in a terminal: hermes lastprice reveal <item>"
+            it = rt.store.item(" ".join(rest) if rest else None)
+            if it is None:
+                return "No such item."
+            ok = commitment(it.floor, it.salt) == it.commit
+            return (f"{it.name}\n  floor: {audit.money(it.floor, it.currency)}\n  salt: {it.salt}\n"
+                    f"  sha256(floor:salt) = {commitment(it.floor, it.salt)}\n"
+                    f"  commitment at listing = {it.commit}\n  match: {'yes' if ok else 'NO'}")
+        if cmd == "doctor":
+            return doctor(rt)
+        if cmd == "duel":
+            if not local or duel_runner is None:
+                return "Duels run in a terminal: hermes lastprice duel --vs-prompt \"<instruction>\""
+            return duel_runner(rest)
+    except ValueError as exc:
+        return f"{exc}\n\n{USAGE}"
+    return USAGE
+
+
+def doctor(rt: Runtime) -> str:
+    lines = ["Last Price doctor"]
+    try:
+        items = rt.store.items()
+        lines.append(f"  state: readable ({len(items)} item(s)); shop {'open' if rt.store.shop_open() else 'PAUSED'}")
+    except Exception as exc:  # the shop closes on unreadable state (hooks fail closed)
+        lines.append(f"  state: UNREADABLE ({exc.__class__.__name__}); deal chats get a holding message")
+    try:
+        from hermes_cli.config import load_config
+
+        cfg = load_config() or {}
+        model = cfg.get("model") or {}
+        name = model.get("default") if isinstance(model, dict) else model
+        lines.append(f"  model: {name or 'NOT SET: run `hermes model` (set model.default in config.yaml)'}")
+    except Exception:
+        lines.append("  model: unknown (could not read config)")
+    lines.append(f"  ledger: {rt.ledger.path or 'disabled'}")
+    lines.append(f"  owners: {', '.join(rt.store.owners()) or 'local terminal only'}")
+    lines.append(f"  shop platforms: {', '.join(rt.store.backend.get('shop_platforms', []) or []) or 'none (duels only)'}")
+    lines.extend("  " + d for d in DISCLOSURE)
+    return "\n".join(lines)

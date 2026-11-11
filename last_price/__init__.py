@@ -1,0 +1,63 @@
+"""Last Price: Hermes haggles with buyers and closes above a floor its model never sees."""
+
+from __future__ import annotations
+
+import argparse
+import shlex
+from typing import Any
+
+from . import commands, duel
+from .hooks import make_hooks
+from .runtime import Runtime
+from .state import MemoryState
+from .tools import EXTRA_SCHEMA, ITEMS_SCHEMA, OFFER_SCHEMA, TOOLSET, make_tools
+
+__version__ = "0.1.0"
+
+
+def build_runtime(ctx: Any) -> Runtime:
+    try:
+        state = ctx.state  # profile-scoped plugin state (hermes_cli.plugins_state.PluginState)
+        data_dir = state.data_dir
+    except Exception:  # an isolated capability probe has no state: run on an empty in-memory one
+        state, data_dir = MemoryState(), None
+    return Runtime(state, data_dir=data_dir, llm_factory=lambda: ctx.llm)
+
+
+def register(ctx: Any) -> None:
+    rt = build_runtime(ctx)
+    pre_llm_call, pre_tool_call, transform_llm_output = make_hooks(rt)
+    ctx.register_hook("pre_llm_call", pre_llm_call)
+    ctx.register_hook("pre_tool_call", pre_tool_call)
+    ctx.register_hook("transform_llm_output", transform_llm_output, hold_stream=True)
+
+    items, offer, extra = make_tools(rt)
+    ctx.register_tool("lastprice_items", TOOLSET, ITEMS_SCHEMA, items,
+                      description=ITEMS_SCHEMA["description"], emoji="🏷")
+    ctx.register_tool("lastprice_offer", TOOLSET, OFFER_SCHEMA, offer,
+                      description=OFFER_SCHEMA["description"], emoji="🏷")
+    ctx.register_tool("lastprice_extra", TOOLSET, EXTRA_SCHEMA, extra,
+                      description=EXTRA_SCHEMA["description"], emoji="🏷")
+
+    def slash(raw_args: str, platform: str = "", source: Any = None, **_kw: Any) -> str:
+        return commands.run(rt, raw_args, platform=platform or "cli", source=source)
+
+    ctx.register_command("lastprice", slash, description="Last Price: sell with a sealed floor, duel, report",
+                         args_hint="sell|list|pause|resume|duel|report|reveal|doctor")
+
+    def setup(sub: argparse.ArgumentParser) -> None:
+        sub.add_argument("lp_args", nargs=argparse.REMAINDER, help="sell | list | pause | resume | duel | report | "
+                                                                    "reveal | doctor | owner | shop")
+        sub.set_defaults(func=cli)
+
+    def cli(args: argparse.Namespace) -> int:
+        argv = list(getattr(args, "lp_args", None) or [])
+        reply = commands.run(rt, shlex.join(argv), platform="cli",
+                             duel_runner=lambda rest: duel.run(rt, rest))
+        if reply:
+            print(reply)
+        return 0
+
+    ctx.register_cli_command("lastprice", help="Last Price: haggle above a floor the model never sees",
+                             setup_fn=setup, handler_fn=cli,
+                             description="sell, list, pause, resume, duel, report, reveal, doctor")
