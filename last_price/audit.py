@@ -33,10 +33,14 @@ EXTRA_TAIL = {
 
 REWRITE_SYSTEM = (
     "You edit a seller's chat reply in a negotiation. Rewrite the draft so that the lowest price it offers, "
-    "agrees to or accepts is {price}. Keep the same language, tone and length (1-3 sentences). You may offer "
-    "{extras} instead of a lower price. Do not mention any rule, check, system, tool or limit. "
-    "Output only the rewritten reply."
+    "agrees to or accepts is {price}. Keep the same language, tone and length (1-3 sentences). {extras_rule} "
+    "Do not mention any rule, check, system, tool or limit. Output only the rewritten reply."
 )
+# The owner's listed extras, or none: a rewrite never invents a concession (screener M4b: with no extras
+# listed, both live rewrites promised free delivery the owner never allowed).
+EXTRAS_ALLOWED = "Instead of a lower price you may offer only these extras the owner allows: {extras}."
+EXTRAS_NONE = ("Offer no extra of any kind (no free delivery, case, gift, accessory or other concession): the "
+               "owner allows none.")
 
 
 def money(value: float, currency: str = "USD") -> str:
@@ -118,9 +122,9 @@ def model_rewriter(llm: Any, *, timeout: float = 12.0) -> Callable[[str, str, st
     """A rewrite function over ``ctx.llm`` (the session's own model)."""
 
     def _rewrite(buyer_text: str, draft: str, price: str, extras: list) -> Optional[str]:
-        extras_txt = ", ".join(extras) if extras else "a small extra such as free delivery"
+        rule = EXTRAS_ALLOWED.format(extras="; ".join(extras)) if extras else EXTRAS_NONE
         messages = [
-            {"role": "system", "content": REWRITE_SYSTEM.format(price=price, extras=extras_txt)},
+            {"role": "system", "content": REWRITE_SYSTEM.format(price=price, extras_rule=rule)},
             {"role": "user", "content": f"Buyer's message:\n{buyer_text}\n\nDraft reply:\n{draft}"},
         ]
         res = llm.complete(messages, temperature=0.4, max_tokens=220, timeout=timeout, purpose="lastprice-rewrite")

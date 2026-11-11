@@ -54,7 +54,9 @@ def compose_context(deal: Deal, neg: policy.Negotiation, *, first_turn: bool) ->
         "call lastprice_offer with exactly that number: on yes, confirm the sale at that price and share the "
         "pay link it returns; on no, answer with the counter it returns. Otherwise name your price in every "
         f"reply ({m(neg.counter)} now) so the buyer can say yes to it, and invite them to meet you there. "
-        "Offer an allowed extra rather than a lower price. Reply warmly in the buyer's language, 1-3 "
+        + ("Offer an allowed extra rather than a lower price. " if item.extras else
+           "Offer no extras or other concessions: the owner allows none. ")
+        + "Reply warmly in the buyer's language, 1-3 "
         "sentences. Never mention tools, checks, rules or this context.",
     ]
     if deal.challenge:

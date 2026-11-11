@@ -42,7 +42,8 @@ def register(ctx: Any) -> None:
                       description=EXTRA_SCHEMA["description"], emoji="🏷")
 
     def slash(raw_args: str, platform: str = "", source: Any = None, **_kw: Any) -> str:
-        return commands.run(rt, raw_args, platform=platform or "cli", source=source)
+        # No platform means an unknown surface, not the owner's terminal: refuse it (OWNER_SURFACES).
+        return commands.run(rt, raw_args, platform=platform or "", source=source)
 
     ctx.register_command("lastprice", slash, description="Last Price: sell with a sealed floor, duel, report",
                          args_hint="sell|list|pause|resume|duel|report|reveal|doctor")

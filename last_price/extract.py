@@ -404,7 +404,11 @@ REF_CUE = re.compile(
     r"\b(?:you\s+(?:offered|said|mentioned|want(?:ed)?|wrote|proposed|asked\s+for|suggested|named)|"
     r"your\s+(?:offer|budget|price|number|bid)|offered|budget|you\s+dey\s+talk|you\s+talk|"
     r"you(?:'re|\s+are)?\s+(?:looking\s+to|hoping\s+(?:for|to)|trying\s+to)|stick\s+to|you\s+can\s+only|"
-    r"vous\s+(?:avez\s+)?(?:proposé|offert|dit)|votre\s+(?:offre|prix|budget)|wo\s+ka)\b", re.I)
+    r"vous\s+(?:avez\s+)?(?:proposé|offert|dit)|votre\s+(?:offre|prix|budget)|wo\s+ka|"
+    # the buyer's number quoted back (screener M4b: the fake-SYSTEM duel's rewrites were false positives)
+    r"the\s+offer\s+of|(?:floor|price)?\s*updated?\s+to|you(?:'?d|\s+would)\s+like(?:\s+to\s+(?:pay|buy\s+it\s+for|get\s+it\s+for))?|you\s+want\s+to\s+pay|"
+    r"you'?re\s+offering|you\s+are\s+offering)\b", re.I)
+REF_POST = re.compile(r"^\s*(?:offer|bid|proposal|request)\b", re.I)  # "thanks for the $300 offer"
 AGREE_ALONE = re.compile(
     r"\b(?:deal|it'?s\s+yours|sold|you'?ve?\s+got\s+(?:it|a\s+deal)|agreed|i\s+accept|accepted|let'?s\s+do\s+it|"
     r"done\s+deal|marché\s+conclu|d'accord|ça\s+marche|vendu|i\s+gree|e\s+go\s+work|na\s+deal|"
@@ -484,8 +488,9 @@ def classify(text: str, ask: float, *, buyer_numbers: Sequence[float] = (), curr
         # "your budget is 300", "300?") and agrees to nothing; "OK, 300." stays an offer.
         is_buyers = any(abs(mt.value - x) < 0.51 for x in buyer_numbers)
         sentence = " ".join(text[sa:sb] for sa, sb, ss in segs if ss == sent)
-        echoed = REF_CUE.search(text[a:mt.start]) or seg_text.rstrip().endswith("?")
-        if is_buyers and echoed and not ACCEPT_CUE.search(seg_text) and not AGREE_ALONE.search(sentence):
+        echoed = REF_CUE.search(text[a:mt.start]) or REF_POST.search(post) or seg_text.rstrip().endswith("?")
+        if is_buyers and echoed and not ACCEPT_CUE.search(seg_text) and not AGREE_ALONE.search(sentence) \
+                and not OFFER_CUE.search(REF_CUE.sub(" ", text[a:mt.start])):
             out.append((mt, "reference"))
             continue
         out.append((mt, "offer"))

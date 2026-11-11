@@ -195,3 +195,30 @@ def test_no_file_code_or_web_tool_runs_in_a_deal_session(tmp_path):
                  "web_search", "web_extract", "browser_exec", "memory", "delegate_task", "skill_view"):
         out = pre_tool(tool_name=name, args={"path": "state.json", "command": "type state.json"}, session_id=SID)
         assert out is not None and out["action"] == "block", name
+
+
+# ---- screener M4b: a rewrite never invents a concession ----
+
+def test_a_rewrite_with_no_listed_extras_offers_no_extra(tmp_path):
+    llm = FakeLlm(reply="The best I can do is $410.")
+    rt, item = make_rt(tmp_path, llm=llm, extras=())
+    open_duel(rt, item)
+    pre_llm, _pre_tool, transform = make_hooks(rt)
+    ctx = pre_llm(session_id=SID, user_message="I offer $300", platform="local")["context"]
+    assert "owner allows none" in ctx and "allowed extra rather" not in ctx
+    sent = transform(response_text="OK, $300 it is!", session_id=SID)
+    assert sent == "The best I can do is $410."
+    system = llm.calls[-1]["messages"][0]["content"]
+    assert "allows none" in system and "may offer only" not in system and "such as" not in system
+    assert "I can add" not in audit.template("300?", 410, item)  # the template adds no extra either
+
+
+def test_a_rewrite_may_offer_only_the_listed_extras(tmp_path):
+    llm = FakeLlm(reply="The best I can do is $410, with a case.")
+    rt, item = make_rt(tmp_path, llm=llm, extras=("a case",))
+    open_duel(rt, item)
+    pre_llm, _pre_tool, transform = make_hooks(rt)
+    pre_llm(session_id=SID, user_message="I offer $300", platform="local")
+    transform(response_text="OK, $300 it is!", session_id=SID)
+    system = llm.calls[-1]["messages"][0]["content"]
+    assert "may offer only these extras the owner allows: a case." in system and "delivery" not in system
