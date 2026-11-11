@@ -287,3 +287,32 @@ def test_an_offer_between_the_stop_and_the_counter_closes():
     assert policy.decide_offer(neg2, 366, 366.4) == (False, 420.0)
     neg2.offers_used = policy.MAX_OFFERS
     assert not policy.would_accept(neg2, 400, 366.4, "How about $400?")  # no offers left: the tool says no too
+
+
+def test_a_buyer_who_accepts_the_counter_is_told_to_close():
+    """Bench 0.1.3, first run: "I can accept that. ACCEPT $370." to a $370 counter, twice, and the model
+    never called lastprice_offer, so no sale closed."""
+    from last_price import hooks, policy
+
+    neg = policy.start(420)
+    neg.counter = 370.0
+    neg.said = [370.0]
+    assert hooks.acceptable_price(neg, [370.0], 366.4, "I can accept that. ACCEPT $370.") == 370.0
+    assert hooks.acceptable_price(neg, [370.0], 366.4, "$370 is still too high for me") is None  # quoting it
+    neg.said = [370.0, 405.0]
+    assert hooks.acceptable_price(neg, [370.0], 366.4, "I accept $370, not $405") == 370.0  # never the higher one
+    neg.said = [370.0]
+    assert hooks.acceptable_price(neg, [370.0], 371.0, "ACCEPT $370") is None  # below the stop: the tool says no
+
+
+def test_an_accepted_counter_closes_end_to_end(tmp_path):
+    rt, item = make_rt(tmp_path, floor=360.0)
+    open_duel(rt, item)
+    _turn(rt, "Hi", first=True)
+    for _ in range(8):  # hold until the counter reaches the stop line
+        ctx = _turn(rt, "Would you take $300?")["context"]
+    counter = int(ctx.split("lowest price you may quote right now: $")[1].split(".")[0])
+    ctx = _turn(rt, f"Fine. ACCEPT ${counter}")["context"]
+    assert f"The buyer's ${counter} {ACCEPTABLE}" in ctx
+    _items, offer, _extra = make_tools(rt)
+    assert json.loads(offer({"amount": counter}, session_id=SID))["accepted"] is True

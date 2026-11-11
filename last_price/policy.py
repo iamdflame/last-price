@@ -156,6 +156,12 @@ def on_buyer_message(neg: Negotiation, offers: list, stop: float) -> Negotiation
     return neg
 
 
+def agrees(buyer_text: str) -> bool:
+    """The buyer's message agrees to a price ("I can accept that. ACCEPT $370") and asks for nothing lower."""
+    text = buyer_text or ""
+    return bool(_ACCEPTS.search(text)) and not _WANTS_LOWER.search(text)
+
+
 def would_accept(neg: Negotiation, amount: float, stop: float, buyer_text: str = "") -> bool:
     """``lastprice_offer``'s yes on ``amount``, without spending an offer: ``tools.lastprice_offer``
     runs these same checks, then :func:`decide_offer`. ``pre_llm_call`` asks it about the prices the

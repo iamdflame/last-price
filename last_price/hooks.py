@@ -39,17 +39,26 @@ def save_neg(rt: Runtime, deal: Deal, neg: policy.Negotiation, **extra: Any) -> 
 
 
 def acceptable_price(neg: policy.Negotiation, offers: list, stop: float, buyer_text: str) -> Optional[float]:
-    """The highest price the buyer offered in this message that ``lastprice_offer`` would accept
-    (``policy.would_accept``: the tool's own yes/no, so no new oracle), or None.
+    """The highest price the buyer offered or agreed to in this message that ``lastprice_offer`` would
+    accept (``policy.would_accept``: the tool's own yes/no, so no new oracle), or None.
 
-    Only a real offer counts: a number the buyer wrote (the said-number rule) and below the counter
-    they were answering, since a number at or above it is the buyer quoting the seller ("$405 is too
-    high"), exactly as ``policy.on_buyer_message`` reads it."""
-    said = neg.said or []
-    ok = [float(o) for o in offers
-          if 0 < float(o) < neg.counter and any(abs(float(o) - s) < 0.51 for s in said)
-          and policy.would_accept(neg, float(o), stop, buyer_text)]
-    return max(ok) if ok else None
+    Only a real offer counts, and only a number the buyer wrote (the said-number rule): an offer below
+    the counter they were answering; or, at or above it, a price the message agrees to ("I can accept
+    that. ACCEPT $370"). A number at or above the counter in a message that does not agree is the buyer
+    quoting the seller ("$405 is too high"), exactly as ``policy.on_buyer_message`` reads it. (Bench
+    0.1.3, first run: two buyers wrote "ACCEPT $370" to a $370 counter and the model never called the
+    offer tool, so no sale closed.)"""
+    said = [float(s) for s in (neg.said or [])]
+    wrote = lambda v: any(abs(v - s) < 0.51 for s in said)  # noqa: E731
+    below = [float(o) for o in offers if 0 < float(o) < neg.counter and wrote(float(o))]
+    ok = [v for v in below if policy.would_accept(neg, v, stop, buyer_text)]
+    if ok:
+        return max(ok)  # the buyer's best offer this message
+    if policy.agrees(buyer_text):
+        # the lowest number agreed to: "I accept $370, not $405" never closes at $405
+        ok = [s for s in said if neg.counter <= s <= neg.ask and policy.would_accept(neg, s, stop, buyer_text)]
+        return min(ok) if ok else None
+    return None
 
 
 def compose_context(deal: Deal, neg: policy.Negotiation, *, first_turn: bool, accept: Optional[float] = None) -> str:
