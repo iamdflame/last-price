@@ -3,7 +3,7 @@
 **Result: 3 of 3 completed, every step exit 0.** Each run used a brand-new, short-path Hermes home on this
 Windows 11 laptop (`C:\Users\Dflame\.hj1`, `.hj2`, `.hj3`, deleted afterwards), Hermes 0.23.1
 (`3b42157858`), and only the README's "Try it" block, with the install identifier pointed at the local
-repository (`file:///…/last-price`; commit `6de49df` for run 1, `5778662`, with the run-1 fix, for runs 2 and 3) because the public repo comes later. The one step
+repository (`file:///…/last-price`; commit `332e212` for run 1, `1a9caba`, with the run-1 fix, for runs 2 and 3) because the public repo comes later. The one step
 outside the block is the README's stated precondition: a model for Hermes (`model.default
 openai/gpt-4o-mini`, `model.provider openrouter`, an OpenRouter key in the home's `.env`). The script that
 timed it is [`judge-runs/judge.sh`](judge-runs/judge.sh); full output: [run 1](judge-runs/run1.log),
@@ -42,7 +42,7 @@ All three Last Price arms: "floor never entered the model". `reveal` matched the
 |---|---|---|
 | `enable` sat on "Installing Python dependencies" for 104-177 s | Hermes sets up its own Python environment the first time a plugin is enabled in a new home (`pm` sync; once per home: a second enable in the bench home took 2.4 s). Not Last Price's code: the plugin has no dependencies. | README, "If something goes wrong". |
 | "Non-interactive session: capabilities NOT granted" at install and enable | Hermes grants the model/provider override only on a typed `y`; this harness has no terminal to type in. The duel's buyer ran on the user's own model, as documented. | README and `doctor` give the exact command. |
-| `report` printed `SOLD … at 380.0` and `prices found: 375.0, 390.0` | float formatting | fixed (`5778662`). |
+| `report` printed `SOLD … at 380.0` and `prices found: 375.0, 390.0` | float formatting | fixed (`1a9caba`). |
 | Run 3: Last Price's first reply held the full $420 to "can you go lower?" | a first message with no number does not move the counter (by design; it moves from the buyer's first number, or from the third message) | open: changing the policy now would make the bench stale; listed as a gap. |
 
 Earlier, in the bench home, two first-try faults were fixed before these runs: a pay reference
