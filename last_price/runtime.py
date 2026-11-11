@@ -62,6 +62,7 @@ class Runtime:
         self.title_lookup = title_lookup or _session_title
         self._deals: dict[str, tuple[Optional[Deal], float]] = {}
         self._lock = threading.Lock()
+        self.has_capability: Optional[Callable[[str], bool]] = None  # ctx.has_capability, when Hermes gives one
 
     @property
     def llm(self) -> Any:

@@ -51,3 +51,16 @@ def test_bench_args_and_terminal_only(tmp_path):
     assert a.duels == 24 and a.budgets == "330-410" and a.parallel == 4 and a.rounds == 8
     rt, _item = make_rt(tmp_path)
     assert "runs in a terminal" in commands.run(rt, "bench", platform="cli")  # no runner wired: refuses
+
+
+def test_doctor_reports_the_buyer_route_and_hosts(tmp_path):
+    from helpers import make_rt
+    from last_price import commands
+
+    rt, _item = make_rt(tmp_path)
+    rt.has_capability = lambda cap: False
+    out = commands.run(rt, "doctor", platform="cli")
+    assert "model override: NOT granted" in out and "hermes plugins enable last-price" in out
+    assert "free path" in out and "hosts contacted" in out and "state: readable" in out
+    rt.has_capability = lambda cap: True
+    assert "model override: granted" in commands.run(rt, "doctor", platform="cli")

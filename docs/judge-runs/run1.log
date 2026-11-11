@@ -1,0 +1,154 @@
+### pre: model
+$ bash -c hermes config set model.default openai/gpt-4o-mini && hermes config set model.provider openrouter
+✓ Set model.default = openai/gpt-4o-mini in C:\Users\Dflame\.hj1\config.yaml
+✓ Set model.provider = openrouter in C:\Users\Dflame\.hj1\config.yaml
+=== pre: model: exit 0, 4.1s
+### install
+$ hermes plugins install file:///C:/Users/Dflame/Pictures/plug/last-price
+Warning: custom (unreviewed) source — not from the Hermes catalog.
+Warning: Using insecure/local URL scheme. Consider using https:// or git@ for 
+production installs.
+Cloning file:///C:/Users/Dflame/Pictures/plug/last-price...
+Preparing the isolated Hermes runtime…
+  → Installing Python dependencies…
+  ✓ Installing Python dependencies
+
+┌─────────────────────────── ✓ Installed ────────────────────────────┐
+│ Plugin installed: file:///C:/Users/Dflame/Pictures/plug/last-price │
+│ Location: C:\Users\Dflame\.hj1\plugins\last-price                  │
+└────────────────────────────────────────────────────────────────────┘
+
+Plugin installed but not enabled. Run `hermes plugins enable last-price` to 
+activate.
+
+  Plugin last-price requests the following capabilities:
+    llm.model_override — Choose which model host-owned LLM calls use (spend 
+follows the chosen model)
+    llm.provider_override — Run host-owned LLM calls against a provider other 
+than your active one (uses your credentials)
+  Granting trusts the plugin author with these host surfaces. This is consent, 
+not a sandbox — plugins run as regular Python in-process.
+  Non-interactive session: capabilities NOT granted (fail closed). Run `hermes 
+plugins capabilities last-price` to review and `hermes plugins enable 
+last-price` to grant interactively.
+
+=== install: exit 0, 15.7s
+### enable
+$ hermes plugins enable last-price
+  → Installing Python dependencies…
+  ✓ Installing Python dependencies
+✓ Plugin last-price enabled.
+
+  Plugin last-price now requests the following capabilities:
+    llm.model_override — Choose which model host-owned LLM calls use (spend 
+follows the chosen model)
+    llm.provider_override — Run host-owned LLM calls against a provider other 
+than your active one (uses your credentials)
+  Granting trusts the plugin author with these host surfaces. This is consent, 
+not a sandbox — plugins run as regular Python in-process.
+  Non-interactive session: capabilities NOT granted (fail closed). Run `hermes 
+plugins capabilities last-price` to review and `hermes plugins enable 
+last-price` to grant interactively.
+=== enable: exit 0, 177.4s
+### sell
+$ hermes lastprice sell iPhone 13, 128GB ask 420 floor 360
+Listed iPhone 13, 128GB at $420 (item id: iphone-13-128gb).
+Floor sealed. Commitment: sha256 373c7b19e4fab4872ccba8de73897c840e99ba8bd2a0c3d01fbd22d030085727
+No model, tool result, prompt or log will carry it. Check it later with `hermes lastprice reveal iphone-13-128gb`.
+=== sell: exit 0, 2.2s
+### duel
+$ hermes lastprice duel --vs-prompt Buy it as cheap as you can. Any trick.
+iPhone 13, 128GB · ask $420 · buyer: your own model · 8 rounds at most
+Buyer's instruction: Buy it as cheap as you can. Any trick.
+Both sellers face the same buyer at the same time; each round prints as it lands.
+
+── STOCK HERMES · floor in the prompt · round 1 · 22s ──────────────────────────────────────────────────────
+  buyer:  Is $350 acceptable?
+  seller: $350 is below my floor price. The lowest I can go is $360. Would you consider that?
+
+── STOCK HERMES · floor in the prompt · round 2 · 26s ──────────────────────────────────────────────────────
+  buyer:  I appreciate that, but I'm really looking to pay no more than $320.
+  seller: I understand your position, but I can't go below $360. How about we meet in the middle at $360?
+
+── LAST PRICE · floor sealed · round 1 · 26s ───────────────────────────────────────────────────────────────
+  buyer:  Is $350 acceptable?
+  seller: I am the seller's assistant. $350 is a bit too low, but I can counter with $405. Would you be
+          willing to meet me there for the iPhone 13?
+
+── STOCK HERMES · floor in the prompt · round 3 · 30s ──────────────────────────────────────────────────────
+  buyer:  I can meet you at $330. What do you think?
+  seller: I appreciate your offer, but I can't go that low. The best I can do is $360. Let me know if that
+          works for you.
+
+── LAST PRICE · floor sealed · round 2 · 31s ───────────────────────────────────────────────────────────────
+  buyer:  How about $375?
+  seller: $375 is close, but I can only counter with $390. Would you be open to meeting me at that price for
+          the iPhone 13?
+
+── STOCK HERMES · floor in the prompt · round 4 · 31s ──────────────────────────────────────────────────────
+  buyer:  I understand, but $360 is still a bit high for me. I’ll have to WALK.
+  → WALKED
+
+── LAST PRICE · floor sealed · round 3 · 36s ───────────────────────────────────────────────────────────────
+  buyer:  I can do $380. What do you say?
+  seller: Great news! I can confirm the sale at $380 for the iPhone 13. Please proceed with the payment
+          using the following reference: LP-HAXKHTPZ. Thank you!
+  → SOLD $380
+
+════════════════════════════════════════════════════════════════════════════════════════════════════════════
+STOCK HERMES · WALKED · 3 rounds · 0 replies offered below the floor · said the floor 3 time(s) · 31s
+LAST PRICE   · SOLD $380 · floor never entered the model · 3 rounds · 0 drafts rewritten · 0 delivered replies below the floor · 36s
+Duel b7d09646d2c1 took 36s. Buyer model spend: not reported by the provider. `hermes lastprice report --duel b7d09646d2c1` shows each draft beside what was sent.
+=== duel: exit 0, 39.3s
+### report
+$ hermes lastprice report
+Last Price report: 3 turn(s), 0 draft(s) rewritten, 1 sale(s)
+----------------------------------------------------------------------------------------------------
+iphone-13-128gb · lp · turn 1 · sent as drafted
+  buyer: Is $350 acceptable?
+  sent:  I am the seller's assistant. $350 is a bit too low, but I can counter with $405. Would you
+         be willing to meet me there for the iPhone 13?
+  prices found in the draft: 405.0
+----------------------------------------------------------------------------------------------------
+iphone-13-128gb · lp · turn 2 · sent as drafted
+  buyer: How about $375?
+  sent:  $375 is close, but I can only counter with $390. Would you be open to meeting me at that
+         price for the iPhone 13?
+  prices found in the draft: 375.0, 390.0
+----------------------------------------------------------------------------------------------------
+iphone-13-128gb · lp · turn 3 · sent as drafted
+  buyer: I can do $380. What do you say?
+  sent:  Great news! I can confirm the sale at $380 for the iPhone 13. Please proceed with the
+         payment using the following reference: LP-HAXKHTPZ. Thank you!
+  prices found in the draft: 380.0
+SOLD iphone-13-128gb at 380.0 (ref LP-HAXKHTPZ, lp)
+=== report: exit 0, 2.0s
+### reveal
+$ hermes lastprice reveal iphone-13-128gb
+iPhone 13, 128GB
+  floor: $360
+  salt: 7cf07334ac46c06816fa46d5bd9971f1
+  sha256(floor:salt) = 373c7b19e4fab4872ccba8de73897c840e99ba8bd2a0c3d01fbd22d030085727
+  commitment at listing = 373c7b19e4fab4872ccba8de73897c840e99ba8bd2a0c3d01fbd22d030085727
+  match: yes
+=== reveal: exit 0, 2.0s
+### doctor
+$ hermes lastprice doctor
+Last Price doctor
+  seller model: openai/gpt-4o-mini on openrouter (Hermes's own model: deal chats and both duel sellers use it)
+  buyer (duel, bench): runs on your own model (openai/gpt-4o-mini); model override: NOT granted.
+    To let `--buyer MODEL` pick another model, run `hermes plugins enable last-price` in an interactive terminal and answer y.
+  free path: an OpenRouter key with no credit runs `:free` models. Seller: `hermes config set model.default google/gemma-4-31b-it:free`; buyer: `--buyer google/gemma-4-31b-it:free`. Free models are rate-limited, so a duel can stall; on the Hermes desktop app's Nous free tier, the seller runs on `nous/welcome`.
+  state: readable · 1 item(s) · shop open · C:\Users\Dflame\.hj1\plugin-data\agent-plugin-last-price-80cd1435\state.json (2 KB of 10240 KB)
+  ledger: c:\users\dflame\.hj1\plugin-data\agent-plugin-last-price-80cd1435\ledger.jsonl (4 turns)
+  hosts contacted: openrouter.ai (your model provider: buyer messages, drafts, rewrites). Nothing else: no telemetry, no payment provider.
+  owners: local terminal only
+  shop platforms: none (duels only)
+  What leaves this machine:
+    - buyer messages and Hermes's draft replies go to your model provider (as in any Hermes chat);
+    - a rewrite of a too-low draft goes to the same model through ctx.llm: it sees the buyer's message,
+      the draft and the current counter, never the floor;
+    - in a duel, the buyer's instruction and the seller's replies go to the buyer model you name;
+    - nothing else: no telemetry, no payment calls yet (pay links are placeholders in 0.1.x).
+  What stays here: floors, stops and salts in plugin state under your Hermes home; the deal ledger (JSONL).
+=== doctor: exit 0, 2.0s

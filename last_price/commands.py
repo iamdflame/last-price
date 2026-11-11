@@ -186,12 +186,13 @@ def _model_config() -> tuple[str, str, str]:
     return str(model or ""), str(cfg.get("provider") or ""), str(cfg.get("base_url") or "")
 
 
-def _override_granted() -> Optional[bool]:
+def _override_granted(rt: Runtime) -> Optional[bool]:
+    """Through ``ctx.has_capability`` (the documented probe); None when it is not available."""
+    probe = getattr(rt, "has_capability", None)
+    if probe is None:
+        return None
     try:
-        from hermes_cli.plugin_capabilities import plugin_capability_granted
-
-        return (plugin_capability_granted(PLUGIN_ID, "llm.model_override")
-                and plugin_capability_granted(PLUGIN_ID, "llm.provider_override"))
+        return bool(probe("llm.model_override") and probe("llm.provider_override"))
     except Exception:
         return None
 
@@ -217,7 +218,7 @@ def doctor(rt: Runtime) -> str:
         lines.append("  seller model: NOT SET. Run `hermes model`, or "
                      "`hermes config set model.default openai/gpt-4o-mini` and `hermes config set model.provider "
                      "openrouter`")
-    granted = _override_granted()
+    granted = _override_granted(rt)
     if granted:
         lines.append("  buyer (duel, bench): `--buyer MODEL` runs on OpenRouter (model override: granted); "
                      f"without --buyer it runs on {model or 'your own model'}")

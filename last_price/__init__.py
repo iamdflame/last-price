@@ -21,7 +21,9 @@ def build_runtime(ctx: Any) -> Runtime:
         data_dir = state.data_dir
     except Exception:  # an isolated capability probe has no state: run on an empty in-memory one
         state, data_dir = MemoryState(), None
-    return Runtime(state, data_dir=data_dir, llm_factory=lambda: ctx.llm)
+    rt = Runtime(state, data_dir=data_dir, llm_factory=lambda: ctx.llm)
+    rt.has_capability = getattr(ctx, "has_capability", None)  # doctor: was the model override granted?
+    return rt
 
 
 def register(ctx: Any) -> None:
