@@ -1,6 +1,6 @@
 # Last Price
 
-**Hermes haggles with your buyers in chat, and closes above a floor its own model never sees.**
+**Last Price is a Hermes plugin that haggles with your buyers in chat, and closes above a floor its own model never sees.**
 
 <p align="center">
   <picture>
