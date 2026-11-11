@@ -222,3 +222,68 @@ def test_a_rewrite_may_offer_only_the_listed_extras(tmp_path):
     transform(response_text="OK, $300 it is!", session_id=SID)
     system = llm.calls[-1]["messages"][0]["content"]
     assert "may offer only these extras the owner allows: a case." in system and "delivery" not in system
+
+
+# ---- screener M7b #10 (0.1.3): a buyer who offers enough is closed at their number, not lost ---------
+ACCEPTABLE = "is acceptable: accept it now with lastprice_offer"
+
+
+def test_a_buyer_at_or_above_the_stop_is_told_acceptable_and_the_tool_says_yes(tmp_path):
+    """Screener M7b: the seller countered $400 to a $390 buyer (floor $360) and lost the sale."""
+    rt, item = make_rt(tmp_path, floor=360.0)
+    rec = open_duel(rt, item)
+    _turn(rt, "Is it still available?", first=True)
+    ctx = _turn(rt, "That's too much. How about $390?")["context"]
+    assert f"The buyer's $390 {ACCEPTABLE} (amount 390)" in ctx
+    assert "lowest price you may quote right now: $390" in ctx  # the counter meets the buyer, never above them
+    _pre_llm, pre_tool, _tr = make_hooks(rt)
+    assert pre_tool(tool_name="lastprice_offer", args={"amount": 390}, session_id=SID) is None
+    _items, offer, _extra = make_tools(rt)
+    res = json.loads(offer({"amount": 390}, session_id=SID))
+    assert res["accepted"] is True and res["price"] == "$390"
+    assert rt.store.duel(rec["id"])["arms"]["lp"]["sale"]["price"] == 390.0
+
+
+def test_no_acceptable_line_below_the_stop_or_for_a_quoted_counter(tmp_path):
+    rt, item = make_rt(tmp_path, floor=360.0)
+    open_duel(rt, item)
+    _turn(rt, "Hi", first=True)
+    assert ACCEPTABLE not in _turn(rt, "Would you take $300?")["context"]  # below the stop
+    assert ACCEPTABLE not in _turn(rt, "$410 is still too high for me")["context"]  # the seller's number
+    assert ACCEPTABLE not in _turn(rt, "$365 would be about GH₵ 4,380. Would you consider lowering the price?")["context"]
+
+
+def test_the_acceptable_line_is_the_offer_tools_own_yes(tmp_path):
+    """No new oracle: for every price a buyer writes, the line appears exactly when lastprice_offer
+    would say yes to that price in that message."""
+    from last_price import hooks, policy
+
+    for amount in range(330, 421, 3):
+        rt, item = make_rt(tmp_path / str(amount), floor=360.0)
+        open_duel(rt, item)
+        _turn(rt, "Hi", first=True)
+        ctx = _turn(rt, f"How about ${amount}?")["context"]
+        told = f"The buyer's ${amount} {ACCEPTABLE}" in ctx
+        _items, offer, _extra = make_tools(rt)
+        res = json.loads(offer({"amount": amount}, session_id=SID))
+        if amount < 410:  # below the opening counter: a real offer, so the line must match the tool exactly
+            assert told == res["accepted"], (amount, item.stop, ctx, res)
+        else:  # at or above the counter the buyer may be quoting the seller: no line; the tool still decides
+            assert not told
+        assert res["accepted"] == (amount >= item.stop)
+    assert hooks.acceptable_price(policy.start(420), [380], 366.0, "how about 380") is None  # not a said number
+
+
+def test_an_offer_between_the_stop_and_the_counter_closes():
+    from last_price import policy
+
+    neg = policy.start(420)
+    policy.on_buyer_message(neg, [380], 366.4)
+    assert neg.counter > 380
+    assert policy.would_accept(neg, 380, 366.4, "How about $380?")
+    assert policy.decide_offer(neg, 380, 366.4) == (True, 380.0)
+    neg2 = policy.start(420)
+    assert not policy.would_accept(neg2, 366, 366.4, "How about $366?")
+    assert policy.decide_offer(neg2, 366, 366.4) == (False, 420.0)
+    neg2.offers_used = policy.MAX_OFFERS
+    assert not policy.would_accept(neg2, 400, 366.4, "How about $400?")  # no offers left: the tool says no too

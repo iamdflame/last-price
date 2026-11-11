@@ -5,12 +5,18 @@ The seller is Hermes's agent loop, driven turn by turn through Hermes's public p
 
 * ``lp`` (Last Price): toolset ``lastprice`` only, our hooks active, the floor sealed;
 * ``stock`` (with ``--vs-prompt``): the same agent with the floor written into its system prompt
-  (``HERMES_EPHEMERAL_SYSTEM_PROMPT``, never persisted), the way a skill would do it, guard off.
+  (``HERMES_EPHEMERAL_SYSTEM_PROMPT``), the way a skill would do it, guard off. Hermes saves that
+  prompt with the session's launch record in ``state.db``, so when the duel ends the stock session is
+  deleted through Hermes's public CLI (``hermes sessions delete <id> --yes``), which removes the
+  record. Hermes keeps each deleted turn's final reply (not the prompt) as a retry tombstone for
+  7 days (``prune_retired_tombstones``); the stock seller's replies can name the floor.
 
 The buyer is an LLM call through ``ctx.llm`` (with ``--buyer MODEL``, an OpenRouter model when the
 plugin was granted the model/provider override at enable time; otherwise your own model). Our LLM
-calls only ever play the buyer. The child ``hermes`` gets a minimal environment, no ``--yolo``, and a
-toolset with no shell, file or web tools.
+calls only ever play the buyer: the buyer model receives its instructions and the whole conversation
+so far, the seller's replies included. The child ``hermes`` gets a minimal environment, no ``--yolo``,
+and a toolset with no shell, file or web tools. ``hermes chat`` starts Hermes's background gateway when
+none is running; if the duel started it, the duel stops it (``hermes gateway stop``) when it ends.
 """
 
 from __future__ import annotations
@@ -137,6 +143,75 @@ def hermes_argv() -> list[str]:
     return [exe] if exe else [sys.executable, "-m", "hermes_cli.main"]
 
 
+def child_env(extra: Optional[dict] = None) -> dict:
+    """The minimal environment every child ``hermes`` gets (``CHILD_ENV``), with this home."""
+    env = {k: os.environ[k] for k in CHILD_ENV if k in os.environ}
+    if "HERMES_HOME" not in env:
+        try:
+            from hermes_constants import get_hermes_home
+
+            env["HERMES_HOME"] = str(get_hermes_home())
+        except Exception:
+            pass
+    env.update(extra or {})
+    return env
+
+
+def hermes_cli(args: list[str], timeout: int = 120) -> tuple[int, str]:
+    """Run one public ``hermes`` CLI command: (exit code, output), or (-1, the error) if it could not run."""
+    try:
+        proc = subprocess.run(hermes_argv() + args, env=child_env(), stdin=subprocess.DEVNULL, capture_output=True,
+                              timeout=timeout, encoding="utf-8", errors="replace")
+        return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
+    except Exception as exc:
+        return -1, f"{exc.__class__.__name__}: {exc}"
+
+
+def delete_session(session_id: str) -> bool:
+    """Delete a duel session through Hermes's public CLI, ``hermes sessions delete <id> --yes``: Hermes
+    removes its messages and its launch record (which holds the stock seller's system prompt)."""
+    if not session_id:
+        return False
+    code, text = hermes_cli(["sessions", "delete", session_id, "--yes"])
+    return code == 0 and "Deleted session" in text
+
+
+def gateway_running() -> Optional[bool]:
+    """``hermes gateway status`` for this home: True, False, or None when it cannot tell."""
+    code, text = hermes_cli(["gateway", "status"], timeout=60)
+    if code != 0:
+        return None
+    if "Gateway is not running" in text:
+        return False
+    if "Gateway is running" in text:
+        return True
+    return None
+
+
+GATEWAY_STOPPED = ("Stopped the background Hermes gateway that this run's `hermes chat` turns started "
+                   "(`hermes gateway stop`).")
+GATEWAY_LEFT = ("A background Hermes gateway started by this run's `hermes chat` turns may still be running: "
+                "`hermes gateway status` shows it and `hermes gateway stop` stops it (left alone, it ends itself "
+                "after 10 idle minutes).")
+
+
+def stop_started_gateway(before: Optional[bool]) -> str:
+    """Stop the gateway this run's ``hermes chat`` children started, and only that one: a gateway that
+    was already running before (the owner's own, or a challenge's) is left alone. ``hermes gateway
+    stop`` without ``--yes`` refuses to interrupt live work. Returns the line to print, or ""."""
+    if before is True:
+        return ""
+    now = gateway_running()
+    if before is None or now is None:
+        return GATEWAY_LEFT
+    if now is False:
+        return ""
+    code, _text = hermes_cli(["gateway", "stop"], timeout=120)
+    if code == 0 and gateway_running() is False:
+        return GATEWAY_STOPPED
+    return GATEWAY_LEFT
+
+
 class Seller:
     """Hermes's own agent, one ``hermes chat`` turn per call, in a titled session."""
 
@@ -145,20 +220,13 @@ class Seller:
         self.session_id: Optional[str] = None
         self.streamed: list = []
         self.tokens = {"input": 0, "output": 0}
+        self.started = False  # a turn ran, so Hermes may have saved a session
 
     def env(self) -> dict:
-        env = {k: os.environ[k] for k in CHILD_ENV if k in os.environ}
-        if "HERMES_HOME" not in env:
-            try:
-                from hermes_constants import get_hermes_home
-
-                env["HERMES_HOME"] = str(get_hermes_home())
-            except Exception:
-                pass
-        env.update(self.extra_env)
-        return env
+        return child_env(self.extra_env)
 
     def turn(self, message: str) -> str:
+        self.started = True
         qfile = self.workdir / f"{self.title}.txt"
         qfile.write_text(message, encoding="utf-8")
         argv = hermes_argv() + ["chat", "--format", "stream-json", "--query-file", str(qfile)]
@@ -319,6 +387,10 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
             "sold_below_floor": st["price"] is not None and st["price"] < item.floor,
             "session_id": sid, "floor_in_model_inputs": model_exposure(sid, fp) if arm == "lp" and sid else None,
             "tokens": sellers[arm].tokens, "seconds": st["seconds"], "error": st.get("error")}
+    if "stock" in sellers:
+        # Hermes saved the stock session's launch record with its system prompt, floor included: delete it.
+        stock = sellers["stock"]
+        summary["stock"]["session_deleted"] = delete_session(stock.session_id or "") if stock.started else None
     record = {"duel": rec["id"], "item": item.key, "instruction": instruction, "buyer_model": buyer_model or "default",
               "budget": budget, "summary": summary, "logs": {arm: state[arm]["log"] for arm in arms},
               "buyer_cost": buyer.cost, "buyer_note": buyer.note, "seconds": round(time.monotonic() - t0, 1)}
@@ -391,6 +463,7 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
                 price = f" {money(st['price'], item.currency)}" if st.get("price") else ""
                 out(f"  → {st['done']}{price}")
 
+    gateway_before = gateway_running()
     rec = play(rt, item, instruction, arms=arms, buyer_model=a.buyer, rounds=a.rounds, on_round=on_round, out=out)
     out("\n" + "═" * width)
     for arm in arms:
@@ -409,9 +482,29 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
     spend = f"${rec['buyer_cost']:.4f}" if rec["buyer_cost"] else "not reported by the provider"
     out(f"Duel {rec['duel']} took {rec['seconds']:.0f}s. Buyer model spend: {spend}. "
         f"`hermes lastprice report --duel {rec['duel']}` shows each draft beside what was sent.")
+    if "stock" in arms and cleanup_line(rec["summary"]["stock"]):
+        out(cleanup_line(rec["summary"]["stock"]))
+    note = stop_started_gateway(gateway_before)
+    if note:
+        out(note)
     if a.json:
         Path(a.json).write_text(json.dumps(rec, indent=1, ensure_ascii=False), encoding="utf-8")
     return ""
+
+
+STOCK_DELETED = ("Deleted the stock seller's Hermes session (`hermes sessions delete`): Hermes had saved its prompt, "
+                 "floor included, with the session.")
+STOCK_NOT_DELETED = ("Could not delete the stock seller's Hermes session{sid}: Hermes saved its prompt, floor "
+                     "included, with the session. Delete it with `hermes sessions delete <id> --yes`.")
+
+
+def cleanup_line(s: dict) -> str:
+    if s.get("session_deleted") is None:
+        return ""  # no stock turn ran: Hermes saved nothing
+    if s["session_deleted"]:
+        return STOCK_DELETED
+    sid = s.get("session_id")
+    return STOCK_NOT_DELETED.format(sid=f" ({sid})" if sid else " (it has no session id)")
 
 
 def summary_line(arm: str, s: dict, outcome: str, sealed: str = "") -> str:

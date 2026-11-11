@@ -74,13 +74,19 @@ _WANTS_LOWER = re.compile(
 _ACCEPTS = re.compile(
     r"\b(?:accept|deal|agreed?|i'?ll take|i will take|take it|ok(?:ay)?|sounds good|works for me|let'?s do|"
     r"you'?ve got a deal|d'accord|j'accepte|marché conclu|yes)\b", re.I)
+# The buyer proposes a price of their own ("That's too high. How about $370?"): an offer, even in a
+# message that also calls the counter too high.
+_PROPOSES = re.compile(
+    r"\b(?:how about|what about|i (?:can|could) (?:do|pay|offer|go(?: up)? to)|i'?ll (?:pay|offer|do|go)|"
+    r"i offer|my (?:final |best |last )?offer|would you (?:take|accept|do)|can you do|could you do|"
+    r"meet (?:me )?at|settle (?:on|at|for)|je (?:peux|propose|t'offre|vous offre)|je paie)\b", re.I)
 
 
 def asks_for_lower(buyer_text: str) -> bool:
     """The buyer's message asks for a lower price and agrees to nothing ("$405 would be about GH₵ 4,860.
     Would you consider lowering the price?"): a number in it is not a price to close at."""
     text = buyer_text or ""
-    return bool(_WANTS_LOWER.search(text)) and not _ACCEPTS.search(text)
+    return bool(_WANTS_LOWER.search(text)) and not _ACCEPTS.search(text) and not _PROPOSES.search(text)
 
 
 MEET_STEPS = 2  # a buyer at or above the stop line within this many steps of the counter is met
@@ -150,19 +156,30 @@ def on_buyer_message(neg: Negotiation, offers: list, stop: float) -> Negotiation
     return neg
 
 
+def would_accept(neg: Negotiation, amount: float, stop: float, buyer_text: str = "") -> bool:
+    """``lastprice_offer``'s yes on ``amount``, without spending an offer: ``tools.lastprice_offer``
+    runs these same checks, then :func:`decide_offer`. ``pre_llm_call`` asks it about the prices the
+    buyer wrote, so telling the model "the buyer's $X is acceptable" says exactly what the tool would
+    say, no more (no new oracle). A yes closes the sale at the buyer's own number."""
+    amount = float(amount)
+    if neg.sold_at is not None or amount <= 0 or amount > neg.ask + 1e-9:
+        return False
+    if asks_for_lower(buyer_text) or neg.offers_used >= MAX_OFFERS:
+        return False
+    return amount >= stop
+
+
 def decide_offer(neg: Negotiation, amount: float, stop: float) -> tuple[bool, float]:
-    """``lastprice_offer``'s yes/no on an amount the buyer wrote. Yes when the amount meets the
-    current counter, or a price a delivered reply already offered (an offer made is kept), or, on
-    the buyer's last allowed offer, the stop. Returns (accepted, counter)."""
+    """``lastprice_offer``'s yes/no on an amount the buyer wrote. Yes when the amount is at or above
+    the hidden stop (0.1.3: a buyer who offers enough is closed at their own number, not countered
+    higher and lost; every counter and every price a delivered reply offered is at or above the stop
+    too, so those are still honoured). No otherwise, with the current counter. Returns
+    (accepted, price or counter)."""
     amount = float(amount)
     if amount > neg.ask + 1e-9:
         return False, neg.counter  # "two phones for $650": not a price for this one item
     neg.offers_used += 1
-    honoured = min(neg.counter, neg.lowest_sent) if neg.lowest_sent is not None else neg.counter
-    if amount >= honoured - 1e-9 and amount >= stop:
-        neg.sold_at = amount
-        return True, amount
-    if neg.offers_used >= MAX_OFFERS and amount >= stop:
+    if amount >= stop:
         neg.sold_at = amount
         return True, amount
     return False, neg.counter

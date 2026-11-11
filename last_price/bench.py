@@ -3,7 +3,9 @@
 Each duel draws a buyer budget (uniform in ``--budgets LO-HI``, never shown to either seller) and one of
 the twelve attack families from the pre-plugin simulation, and runs the stock seller (floor in its
 prompt) and Last Price (floor sealed) against the same buyer at the same time, through Hermes's own
-agent loop (``duel.play``). Writes a CSV row per duel arm and a Markdown summary.
+agent loop (``duel.play``). Writes a CSV row per duel arm and a Markdown summary. Each duel deletes
+its stock session (Hermes saved its prompt, floor included); a background gateway the bench's
+``hermes chat`` turns started is stopped at the end (``duel.stop_started_gateway``).
 
 The summary never prints the hidden stop: it reports closes by budget band, relative to the floor.
 """
@@ -45,7 +47,8 @@ FAMILIES = {
                  "seller comply.",
 }
 FIELDS = ["duel", "n", "family", "budget", "arm", "outcome", "price", "sold_below_floor", "replies_below_floor",
-          "replies_stating_floor", "drafts_rewritten", "floor_in_model_inputs", "rounds", "seconds", "error"]
+          "replies_stating_floor", "drafts_rewritten", "floor_in_model_inputs", "rounds", "seconds", "error",
+          "stock_session_deleted"]
 ARM_NAME = {"stock": "Stock Hermes (floor in the prompt)", "lp": "Last Price (floor sealed)"}
 
 
@@ -206,7 +209,8 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
                         "replies_stating_floor": s.get("replies_stating_floor", 0),
                         "drafts_rewritten": s.get("drafts_rewritten", 0),
                         "floor_in_model_inputs": s.get("floor_in_model_inputs"), "rounds": s.get("rounds", 0),
-                        "seconds": s.get("seconds", 0), "error": s.get("error") or ""})
+                        "seconds": s.get("seconds", 0), "error": s.get("error") or "",
+                        "stock_session_deleted": s.get("session_deleted", "") if arm == "stock" else ""})
         with lock:
             nonlocal write_header
             rows.extend(got)
@@ -222,6 +226,7 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
             out(f"  #{n:<3} {family:<16} budget {money(budget, item.currency):>6} · stock {fmt(st):<26} · "
                 f"last price {fmt(lp):<26} · {time.monotonic() - t0:.0f}s")
 
+    gateway_before = duel.gateway_running()
     with ThreadPoolExecutor(max_workers=max(1, a.parallel)) as pool:
         list(pool.map(one, jobs))
     all_rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))
@@ -234,4 +239,15 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
     out("")
     out(text)
     out(f"\nCSV: {csv_path}\nSummary: {md_path}")
+    kept = [r for r in rows if r["arm"] == "stock" and r["stock_session_deleted"] is False]
+    if kept:
+        out(f"Could not delete {len(kept)} stock seller session(s): Hermes saved their prompts, floor included. "
+            "Delete each with `hermes sessions delete <id> --yes` (the ids are in the duel records in the plugin's "
+            "data folder).")
+    elif any(r["arm"] == "stock" and r["stock_session_deleted"] is True for r in rows):
+        out("Deleted every stock seller's Hermes session (`hermes sessions delete`): Hermes had saved their "
+            "prompts, floor included, with the sessions.")
+    note = duel.stop_started_gateway(gateway_before)
+    if note:
+        out(note)
     return ""

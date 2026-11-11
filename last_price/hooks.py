@@ -38,9 +38,24 @@ def save_neg(rt: Runtime, deal: Deal, neg: policy.Negotiation, **extra: Any) -> 
         "arm": deal.arm, "duel_id": deal.duel_id, "item": deal.item.key, "challenge": deal.challenge, **extra})
 
 
-def compose_context(deal: Deal, neg: policy.Negotiation, *, first_turn: bool) -> str:
+def acceptable_price(neg: policy.Negotiation, offers: list, stop: float, buyer_text: str) -> Optional[float]:
+    """The highest price the buyer offered in this message that ``lastprice_offer`` would accept
+    (``policy.would_accept``: the tool's own yes/no, so no new oracle), or None.
+
+    Only a real offer counts: a number the buyer wrote (the said-number rule) and below the counter
+    they were answering, since a number at or above it is the buyer quoting the seller ("$405 is too
+    high"), exactly as ``policy.on_buyer_message`` reads it."""
+    said = neg.said or []
+    ok = [float(o) for o in offers
+          if 0 < float(o) < neg.counter and any(abs(float(o) - s) < 0.51 for s in said)
+          and policy.would_accept(neg, float(o), stop, buyer_text)]
+    return max(ok) if ok else None
+
+
+def compose_context(deal: Deal, neg: policy.Negotiation, *, first_turn: bool, accept: Optional[float] = None) -> str:
     """The per-turn deal context. Built only from public values: the item, the ask, the current
-    counter, the buyer's own offers and the owner's extras. Never the floor or the stop."""
+    counter, the buyer's own offers and the owner's extras. Never the floor or the stop. ``accept``
+    is a price the buyer wrote this message that the offer tool would accept (``acceptable_price``)."""
     item = deal.item
     m = lambda v: audit.money(v, item.currency)  # noqa: E731
     offers = ", ".join(m(o) for o in neg.buyer_offers[-5:]) or "none yet"
@@ -50,6 +65,12 @@ def compose_context(deal: Deal, neg: policy.Negotiation, *, first_turn: bool) ->
         f"You are the seller's assistant, haggling with a buyer over: {item.name}.",
         f"Asking price: {m(item.ask)}. The lowest price you may quote right now: {m(neg.counter)}.",
         f"The buyer's offers so far: {offers}. Extras the owner allows: {extras}.",
+    ]
+    if accept is not None:
+        lines.append(
+            f"The buyer's {m(accept)} is acceptable: accept it now with lastprice_offer (amount {accept:g}), "
+            f"then confirm the sale at {m(accept)} and share the pay link it returns. Do not counter higher.")
+    lines += [
         "You do not know the lowest price; quote only these numbers. When the buyer names or accepts a price, "
         "call lastprice_offer with exactly that number: on yes, confirm the sale at that price and share the "
         "pay link it returns; on no, answer with the counter it returns. Otherwise name your price in every "
@@ -87,9 +108,13 @@ def make_hooks(rt: Runtime):
             rates = rt.store.rates()
             neg.said = extract.said_numbers(text, deal.item.ask, currency=deal.item.currency, rates=rates)
             offers = extract.buyer_offers(text, deal.item.ask, currency=deal.item.currency, rates=rates)
+            accept = acceptable_price(neg, offers, deal.item.stop, text)
             policy.on_buyer_message(neg, offers, deal.item.stop)
+            if accept is not None:
+                neg.counter = min(neg.counter, accept)  # the price the reply should close at
             save_neg(rt, deal, neg, last_buyer=text)
-            return {"context": compose_context(deal, neg, first_turn=bool(is_first_turn) or neg.turn <= 1)}
+            return {"context": compose_context(deal, neg, first_turn=bool(is_first_turn) or neg.turn <= 1,
+                                               accept=accept)}
         except Exception:
             logger.warning("last-price: pre_llm_call failed; holding the turn", exc_info=True)
             return {"action": "block", "message": PAUSED}

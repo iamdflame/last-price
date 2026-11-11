@@ -25,8 +25,9 @@ USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
   duel [--vs-prompt] [--buyer MODEL] [--rounds N] "<instruction>"   (terminal only)
   bench [--duels N] [--budgets LO-HI] [--parallel P]   many duels, both sellers (terminal only)
   report [--duel ID] [--last N]   each deal turn: the draft beside what was sent
-  reveal <item>            the floor and salt, checked against the commitment (local only)
-  owner add <platform>:<user_id> | shop on|off <platform> | doctor
+  reveal <item>            the floor and salt, checked against the commitment (terminal only)
+  owner add <platform>:<user_id> | shop on|off <platform>   (terminal only)
+  doctor                   the seller model, the buyer, the state file, the hosts contacted
   challenge start <item> | challenge board [--out docs/challenge/board.md] | challenge end   (terminal only)
                            a public "buy it below my floor" challenge on Telegram"""
 
@@ -43,13 +44,25 @@ CHILDREN = ("`duel` and `bench` run `hermes chat` child processes, never with `-
 AT_REST = ("The floor is hidden from the model in deal sessions, which cannot read files. On your own machine it is "
            "your data, stored as plain JSON in plugin state: readable by you and by any agent you give file "
            "tools to.")
+# Screener M7b #3: the buyer model gets the whole conversation, not only the instruction (duel.Buyer.say).
+BUYER_GETS = ("In a duel or bench, the buyer model (your own model, or the one you name with `--buyer`) receives the "
+              "buyer's instruction and the whole conversation so far, the seller's replies included.")
+# Screener M7b #2: Hermes saved the stock seller's prompt with its session (state.db, the launch record).
+STOCK_SESSION = ("Hermes saves the stock seller's system prompt, floor included, with its session in `state.db`; "
+                 "each duel and bench duel deletes its stock session when it ends (`hermes sessions delete <id> "
+                 "--yes`), which removes that prompt. What remains: the stock seller's replies, which can name the "
+                 "floor, in Hermes's deletion tombstones for its 7-day retry window and in the duel records and "
+                 "ledger in Last Price's data folder; and the Last Price seller's session, which never had the floor.")
+# Screener M7b #6: `hermes chat` starts a background gateway when none runs.
+GATEWAY = ("`hermes chat` starts Hermes's background gateway when none is running; a duel or bench that started it "
+           "stops it when it ends (`hermes gateway stop`), and leaves a gateway you were already running alone.")
 
 DISCLOSURE = [
     "What leaves this machine:",
     "  - buyer messages and Hermes's draft replies go to your model provider (as in any Hermes chat);",
     "  - a rewrite of a too-low draft goes to the same model through ctx.llm: it sees the buyer's message,",
     "    the draft and the current counter, never the floor;",
-    "  - in a duel, the buyer's instruction and the seller's replies go to the buyer model you name;",
+    "  - " + BUYER_GETS,
     "  - in a duel with --vs-prompt and in every bench, the STOCK seller gets the duel item's floor written",
     "    into its system prompt, which goes to your model provider: by default that is the demo item's",
     "    throwaway floor, never one of your items unless you pass --item <id> --real-item;",
@@ -58,6 +71,8 @@ DISCLOSURE = [
     "  - " + BRIDGE,
     "  - " + STOCK_TOOLS,
     "  - " + CHILDREN,
+    "  - " + GATEWAY,
+    "  - " + STOCK_SESSION,
     "  - " + challenge.SETTINGS_DISCLOSURE,
     "What stays here: floors, stops and salts in plugin state under your Hermes home; the deal ledger (JSONL).",
     "  " + AT_REST,

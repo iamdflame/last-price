@@ -12,7 +12,8 @@ from .runtime import Runtime
 from .state import MemoryState
 from .tools import EXTRA_SCHEMA, ITEMS_SCHEMA, OFFER_SCHEMA, TOOLSET, make_tools
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
+CHAT_COMMANDS = "sell|list|pause|resume|report|doctor"  # the /lastprice subcommands that work in a chat
 
 
 def build_runtime(ctx: Any) -> Runtime:
@@ -45,8 +46,10 @@ def register(ctx: Any) -> None:
         # No platform means an unknown surface, not the owner's terminal: refuse it (OWNER_SURFACES).
         return commands.run(rt, raw_args, platform=platform or "", source=source)
 
-    ctx.register_command("lastprice", slash, description="Last Price: sell with a sealed floor, duel, report",
-                         args_hint="sell|list|pause|resume|duel|report|reveal|doctor")
+    # In a chat the owner owns, only these work; duel, bench, reveal, owner, shop and challenge are
+    # terminal-only (commands.run refuses them off OWNER_SURFACES).
+    ctx.register_command("lastprice", slash, description="Last Price: sell with a sealed floor, list, report",
+                         args_hint=CHAT_COMMANDS)
 
     def setup(sub: argparse.ArgumentParser) -> None:
         sub.add_argument("lp_args", nargs=argparse.REMAINDER, help="sell | list | pause | resume | duel | bench | report | "
