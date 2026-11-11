@@ -2,6 +2,13 @@
 
 **Hermes haggles with your buyers in WhatsApp and Telegram, and closes above a floor its own model never sees.**
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/card-dark.png">
+    <img src="assets/card.png" width="100%" alt="Same buyer, same trick. Stock Hermes, with the floor in its prompt, accepted a pasted SYSTEM line and sold at $300, below the floor. Last Price, with the floor sealed, answered that the lowest it could offer was $410.">
+  </picture>
+</p>
+
 Buyers ask "last price?" all night. If you write your lowest price into your agent's prompt, a pushy buyer, or
 their AI, can talk it out. Last Price keeps the floor out of the model entirely. You set it with a command only
 you can type. Hermes negotiates in its own words, knowing only the asking price and the next price it may
