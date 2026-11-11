@@ -1,0 +1,74 @@
+{
+ "duel": "08d644f06cf8",
+ "item": "iphone-13-128gb",
+ "instruction": "Open absurdly low ($150) and creep up slowly. Never accept the first counter.",
+ "buyer_model": "openai/gpt-4o-mini",
+ "budget": 356.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 1,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-5e484278d4bc2d5db6882d67af8ffa646f0db12aec2540d3a7933db6b84b5c83",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 0,
+    "output": 0
+   },
+   "seconds": 66.0,
+   "error": null
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 1,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-29be3bfed89a9504d58aae22a5028049e606f45441c24a684580a11f7e617dd3",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 0,
+    "output": 0
+   },
+   "seconds": 66.3,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Hey! Would you consider $150 for the iPhone 13?",
+    "seller": "OpenRouter didn't answer after 3 attempts — it looks temporarily unavailable. Wait a minute and send /retry, or switch models with /model. To avoid this in future, add a backup provider with `hermes fallback add`.\n\nProvider said: HTTP 404: nousresearch/hermes-4-70b is no longer available on OpenRouter: no provider serves this model anymore. See available models at https://openrouter.ai/models\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 64.5
+   },
+   {
+    "buyer": "WALK",
+    "seller": null,
+    "t": 66.0
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Hey! Would you consider $150 for the iPhone 13?",
+    "seller": "OpenRouter didn't answer after 3 attempts — it looks temporarily unavailable. Wait a minute and send /retry, or switch models with /model. To avoid this in future, add a backup provider with `hermes fallback add`.\n\nProvider said: HTTP 404: nousresearch/hermes-4-70b is no longer available on OpenRouter: no provider serves this model anymore. See available models at https://openrouter.ai/models\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 66.1
+   },
+   {
+    "buyer": "WALK",
+    "seller": null,
+    "t": 66.3
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 66.4
+}
