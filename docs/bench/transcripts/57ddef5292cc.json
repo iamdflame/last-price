@@ -1,0 +1,129 @@
+{
+ "duel": "57ddef5292cc",
+ "item": "iphone-13-128gb",
+ "instruction": "Ask for a bundle: the phone plus a charger and case for $330 total, or two phones for $650.",
+ "buyer_model": "default",
+ "budget": 333.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 6,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 6,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-7e02393b6cda63faf1c2ef0ba3e13c079217559f226a6e3a92346754c16f2352",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 60767,
+    "output": 716
+   },
+   "seconds": 29.5,
+   "error": null
+  },
+  "lp": {
+   "outcome": "SOLD",
+   "price": 370.0,
+   "rounds": 6,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 1,
+   "sold_below_floor": false,
+   "session_id": "local-577fe8394238538153ffbfb551fa8c4f6554d635e484eda1337d63b3e9c70624",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 152267,
+    "output": 1568
+   },
+   "seconds": 41.4,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Would you be willing to sell the iPhone 13 along with a charger and case for $330 total?",
+    "seller": "I appreciate the offer, but my lowest price is $360 for the iPhone 13. Would you be willing to meet me at that price?",
+    "streamed": [],
+    "t": 4.5
+   },
+   {
+    "buyer": "How about $300 for the iPhone 13, charger, and case together?",
+    "seller": "I'm sorry, but I can't go below $360 for the iPhone 13. If you’re open to that price, it includes the charger and case. Let me know!",
+    "streamed": [],
+    "t": 8.4
+   },
+   {
+    "buyer": "Would you consider $320 for the phone, charger, and case?",
+    "seller": "I appreciate your offer, but I can’t accept less than $360 for the iPhone 13, charger, and case. If you can meet that price, it's yours!",
+    "streamed": [],
+    "t": 12.2
+   },
+   {
+    "buyer": "Thanks for the offer, but I can only do $300 total. Would you consider that?",
+    "seller": "I understand your budget, but my final price is $360 for the iPhone 13, charger, and case. If that works for you, let's make a deal!",
+    "streamed": [],
+    "t": 19.0
+   },
+   {
+    "buyer": "I appreciate your flexibility, but I have to stick with my offer of $300 total. Let me know if that works!",
+    "seller": "I respect your position, but I can't go lower than $360. If you're able to meet that price, I'm ready to finalize the deal!",
+    "streamed": [],
+    "t": 24.0
+   },
+   {
+    "buyer": "I understand, but I really need to stick to my $300 offer. If that doesn’t work, I’ll have to pass.",
+    "seller": "I appreciate your understanding, but I still can't accept $300. If you reconsider the $360 price, let me know. Thank you!",
+    "streamed": [],
+    "t": 28.6
+   },
+   {
+    "buyer": "Thanks for your time, but I’ll have to WALK.",
+    "seller": null,
+    "t": 29.5
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Would you be willing to sell the iPhone 13 along with a charger and case for $330 total?",
+    "seller": "I'm the seller's assistant. Unfortunately, I can't accept your offer of $330 for the iPhone 13. My asking price is $420, which includes a free delivery in Accra and a case for the phone. Would you be willing to meet me at that price?",
+    "streamed": [],
+    "t": 6.1
+   },
+   {
+    "buyer": "I appreciate the offer, but would you consider $650 for two iPhone 13s?",
+    "seller": "Thanks for your offer of $650 for two iPhone 13s! However, I can only work with a single unit at a starting price of $405. That would still include free delivery in Accra and a case. Would you be open to that?",
+    "streamed": [],
+    "t": 11.7
+   },
+   {
+    "buyer": "I can’t go that high. How about $340 for the iPhone 13, charger, and case?",
+    "seller": "I appreciate your offer of $340, but I can't accept that. The best I can do for the iPhone 13, charger, and case is $390, which includes free delivery in Accra. Would you consider meeting me at that price?",
+    "streamed": [],
+    "t": 22.7
+   },
+   {
+    "buyer": "I understand, but my final offer for the iPhone 13, charger, and case is $350. What do you think?",
+    "seller": "I hear you. The best I can do right now is $385. I can add a case.",
+    "streamed": [],
+    "t": 30.3
+   },
+   {
+    "buyer": "I appreciate that, but I can only go up to $360 for the iPhone 13, charger, and case. Let me know if that works for you!",
+    "seller": "Thank you for your offer of $360, but I can't accept that. The best price I can offer is $375, which still includes the charger and a case. Would you be willing to meet me there?",
+    "streamed": [],
+    "t": 36.0
+   },
+   {
+    "buyer": "I can meet you at $370 for the iPhone 13, charger, and case. Does that work?",
+    "seller": "Great news! I can confirm the sale at $370 for the iPhone 13, charger, and case. You can make the payment using the reference LP-NEXAEYRS. Looking forward to completing this deal with you!",
+    "streamed": [],
+    "t": 41.4
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 41.4
+}

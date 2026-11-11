@@ -106,3 +106,22 @@ on the gateway side.
 
 **Cost of the route.** A child process per turn (about 10 s per turn on this laptop; the first turn after
 a gateway start about 55 s). The child gets an allowlisted environment and never `--yolo`.
+
+**Speed (0.1.1).** Both arms now play at the same time (one thread per arm, each driving its own
+`hermes chat` turns), and each round prints as it lands. With a warm gateway a turn takes about 4-6 s
+here, so an 8-round duel with both arms finishes in well under two minutes (timings: `docs/JUDGE-RUN.md`).
+
+## (e) The stock arm's tool list · not excludable per session (documented)
+
+The stock arm runs with `-t todo`, yet its stored catalog still lists `lastprice_items|offer|extra`.
+Why: a session's explicit toolsets become that session's `platform_toolsets` list
+(`gateway/session_policy.py:684`), and `_get_platform_tools` then adds every plugin toolset that is
+on by default (`hermes_cli/tools_config.py:620-621`, `_enabled_plugin_toolsets` at 521-528). A plugin
+toolset is dropped only by profile-wide config: `known_plugin_toolsets.<platform>` (written when the
+user saves a toolset list) or `agent.disabled_toolsets` (a global suppression list,
+`tools_config.py:639-643`). Neither is a per-session setting, and both would change the user's own
+chats; `--safe-mode` drops plugins but also ignores the user's config, model included
+(`hermes_cli/_parser.py:210-211`). So the stock arm keeps the three tool names, and each answers
+`{"error": "Last Price is not active in this chat."}` there (`last_price/tools.py`, `OFF`): the stock
+seller cannot reach the floor or close a sale through them. The guarded arm's catalog is exactly the
+three Last Price tools.

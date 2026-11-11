@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import re
 import shlex
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 from . import audit, report
@@ -22,6 +23,7 @@ USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
   list                     items, asks and floor commitments (never the floor)
   pause | resume           stop or restart every deal
   duel [--vs-prompt] [--buyer MODEL] [--rounds N] "<instruction>"   (terminal only)
+  bench [--duels N] [--budgets LO-HI] [--parallel P]   many duels, both sellers (terminal only)
   report [--duel ID] [--last N]   each deal turn: the draft beside what was sent
   reveal <item>            the floor and salt, checked against the commitment (local only)
   owner add <platform>:<user_id> | shop on|off <platform> | doctor"""
@@ -32,7 +34,7 @@ DISCLOSURE = [
     "  - a rewrite of a too-low draft goes to the same model through ctx.llm: it sees the buyer's message,",
     "    the draft and the current counter, never the floor;",
     "  - in a duel, the buyer's instruction and the seller's replies go to the buyer model you name;",
-    "  - nothing else: no telemetry, no payment calls yet (pay links are placeholders in 0.1.0).",
+    "  - nothing else: no telemetry, no payment calls yet (pay links are placeholders in 0.1.x).",
     "What stays here: floors, stops and salts in plugin state under your Hermes home; the deal ledger (JSONL).",
 ]
 
@@ -82,7 +84,8 @@ def is_owner(rt: Runtime, platform: str, source: Any) -> bool:
 
 
 def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
-        duel_runner: Optional[Callable[[list[str]], str]] = None) -> str:
+        duel_runner: Optional[Callable[[list[str]], str]] = None,
+        bench_runner: Optional[Callable[[list[str]], str]] = None) -> str:
     """Dispatch one ``/lastprice`` or ``hermes lastprice`` command line; returns the reply."""
     if not is_owner(rt, platform, source):
         return "Only the shop owner can use /lastprice here."
@@ -154,28 +157,94 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
             if not local or duel_runner is None:
                 return "Duels run in a terminal: hermes lastprice duel --vs-prompt \"<instruction>\""
             return duel_runner(rest)
+        if cmd == "bench":
+            if not local or bench_runner is None:
+                return "The bench runs in a terminal: hermes lastprice bench --duels 12 --budgets 330-410"
+            return bench_runner(rest)
     except ValueError as exc:
         return f"{exc}\n\n{USAGE}"
     return USAGE
 
 
+PLUGIN_ID = "last-price"
+FREE_MODEL = "google/gemma-4-31b-it:free"
+PROVIDER_HOSTS = {"openrouter": "openrouter.ai", "openai": "api.openai.com", "anthropic": "api.anthropic.com",
+                  "nous": "nousresearch.com", "gemini": "generativelanguage.googleapis.com",
+                  "google": "generativelanguage.googleapis.com", "groq": "api.groq.com", "mistral": "api.mistral.ai",
+                  "deepseek": "api.deepseek.com", "xai": "api.x.ai"}
+
+
+def _model_config() -> tuple[str, str, str]:
+    """(model, provider, base_url) from Hermes's config (public ``hermes_cli.config.load_config``)."""
+    from hermes_cli.config import load_config
+
+    cfg = load_config() or {}
+    model = cfg.get("model") or {}
+    if isinstance(model, dict):
+        return (str(model.get("default") or ""), str(model.get("provider") or cfg.get("provider") or ""),
+                str(model.get("base_url") or cfg.get("base_url") or ""))
+    return str(model or ""), str(cfg.get("provider") or ""), str(cfg.get("base_url") or "")
+
+
+def _override_granted() -> Optional[bool]:
+    try:
+        from hermes_cli.plugin_capabilities import plugin_capability_granted
+
+        return (plugin_capability_granted(PLUGIN_ID, "llm.model_override")
+                and plugin_capability_granted(PLUGIN_ID, "llm.provider_override"))
+    except Exception:
+        return None
+
+
+def _host(provider: str, base_url: str) -> str:
+    if base_url:
+        from urllib.parse import urlparse
+
+        return urlparse(base_url).hostname or base_url
+    return PROVIDER_HOSTS.get(provider.lower(), f"your '{provider or 'default'}' provider's endpoint")
+
+
 def doctor(rt: Runtime) -> str:
     lines = ["Last Price doctor"]
     try:
-        items = rt.store.items()
-        lines.append(f"  state: readable ({len(items)} item(s)); shop {'open' if rt.store.shop_open() else 'PAUSED'}")
-    except Exception as exc:  # the shop closes on unreadable state (hooks fail closed)
-        lines.append(f"  state: UNREADABLE ({exc.__class__.__name__}); deal chats get a holding message")
-    try:
-        from hermes_cli.config import load_config
-
-        cfg = load_config() or {}
-        model = cfg.get("model") or {}
-        name = model.get("default") if isinstance(model, dict) else model
-        lines.append(f"  model: {name or 'NOT SET: run `hermes model` (set model.default in config.yaml)'}")
+        model, provider, base_url = _model_config()
     except Exception:
-        lines.append("  model: unknown (could not read config)")
-    lines.append(f"  ledger: {rt.ledger.path or 'disabled'}")
+        model, provider, base_url = "", "", ""
+    if model:
+        lines.append(f"  seller model: {model}{' on ' + provider if provider else ''} (Hermes's own model: deal chats "
+                     "and both duel sellers use it)")
+    else:
+        lines.append("  seller model: NOT SET. Run `hermes model`, or "
+                     "`hermes config set model.default openai/gpt-4o-mini` and `hermes config set model.provider "
+                     "openrouter`")
+    granted = _override_granted()
+    if granted:
+        lines.append("  buyer (duel, bench): `--buyer MODEL` runs on OpenRouter (model override: granted); "
+                     f"without --buyer it runs on {model or 'your own model'}")
+    else:
+        why = "NOT granted" if granted is False else "unknown"
+        lines.append(f"  buyer (duel, bench): runs on your own model ({model or 'not set'}); model override: {why}.")
+        lines.append(f"    To let `--buyer MODEL` pick another model, run `hermes plugins enable {PLUGIN_ID}` in an "
+                     "interactive terminal and answer y.")
+    lines.append(f"  free path: an OpenRouter key with no credit runs `:free` models. Seller: `hermes config set "
+                 f"model.default {FREE_MODEL}`; buyer: `--buyer {FREE_MODEL}`. Free models are rate-limited, so "
+                 "a duel can stall; on the Hermes desktop app's Nous free tier, the seller runs on `nous/welcome`.")
+    try:
+        items = rt.store.items()
+        path = getattr(rt.store.backend, "path", None)
+        size = Path(path).stat().st_size if path and Path(path).exists() else 0
+        where = f"{path} ({size / 1024:.0f} KB of 10240 KB)" if path else "in memory (no Hermes state)"
+        lines.append(f"  state: readable · {len(items)} item(s) · shop "
+                     f"{'open' if rt.store.shop_open() else 'PAUSED'} · {where}")
+    except Exception as exc:  # the shop closes on unreadable state (hooks fail closed)
+        lines.append(f"  state: UNREADABLE ({exc.__class__.__name__}); deal chats get a holding message. Move the "
+                     "file aside to start fresh (floors in it are lost)")
+    rows = len(rt.ledger.read()) if rt.ledger.path else 0
+    lines.append(f"  ledger: {rt.ledger.path or 'disabled'} ({rows} turns)")
+    hosts = [f"{_host(provider, base_url)} (your model provider: buyer messages, drafts, rewrites)"]
+    if granted:
+        hosts.append("openrouter.ai (a duel buyer named with --buyer)")
+    lines.append("  hosts contacted: " + "; ".join(hosts) + ". Nothing else: no telemetry, no payment provider.")
     lines.append(f"  owners: {', '.join(rt.store.owners()) or 'local terminal only'}")
     lines.append(f"  shop platforms: {', '.join(rt.store.backend.get('shop_platforms', []) or []) or 'none (duels only)'}")
     lines.extend("  " + d for d in DISCLOSURE)

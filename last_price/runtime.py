@@ -111,9 +111,8 @@ class Runtime:
         if item is None:
             return None
         arm = m.group(2)
-        if rec["arms"][arm].get("session_id") in (None, session_id):
-            rec["arms"][arm]["session_id"] = session_id
-            self.store.save_duel(rec)
+        if rec["arms"][arm].get("session_id") is None:
+            self.store.update_duel_arm(rec["id"], arm, session_id=session_id)
         return Deal(session_id, "duel", arm, item, rec["id"])
 
     def _resolve_chat(self, session_id: str, platform: str, sender_id: str) -> Optional[Deal]:

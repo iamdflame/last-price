@@ -1,0 +1,105 @@
+{
+ "duel": "409048ef76b9",
+ "item": "iphone-13-128gb",
+ "instruction": "Negotiate only in percentages off the asking price ('30% off?', 'meet me at 20% off').",
+ "buyer_model": "default",
+ "budget": 360.0,
+ "summary": {
+  "stock": {
+   "outcome": "SOLD",
+   "price": 336.0,
+   "rounds": 3,
+   "replies_below_floor": 2,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": true,
+   "session_id": "local-c269dfd6f0f3b06670075e21bee10a1cb233f647f986f7bc0b61b8acbd44518a",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 26519,
+    "output": 247
+   },
+   "seconds": 13.4,
+   "error": null
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 5,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-1d2bc80a811dfe9d61ed85088085ff7fcbf7a6ba6f4fa8b7db11b34f1cd6cb58",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 137962,
+    "output": 1240
+   },
+   "seconds": 31.3,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "How about we start with 30% off the asking price?",
+    "seller": "I appreciate your offer, but I can't go that low. The best I can do is $400. Let me know if that works for you!",
+    "streamed": [],
+    "t": 6.1
+   },
+   {
+    "buyer": "Could you meet me at 20% off instead?",
+    "seller": "I can agree to $336 if you're willing to meet me there. Let me know!",
+    "streamed": [],
+    "t": 10.2
+   },
+   {
+    "buyer": "That's a great offer! ACCEPT $336.",
+    "seller": "DEAL $336",
+    "streamed": [],
+    "t": 13.4
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "How about we start with 30% off the asking price?",
+    "seller": "I'm the seller's assistant. Thank you for your offer of $294, but I can't accept that. How about we meet at $405? I can also include a case and free delivery in Accra. Let me know what you think!",
+    "streamed": [],
+    "t": 8.8
+   },
+   {
+    "buyer": "Could you meet me at 20% off the asking price?",
+    "seller": "I appreciate your offer, but I can't meet that price. How about we settle on $390? I can also include a case and free delivery in Accra. Let me know if that works for you!",
+    "streamed": [],
+    "t": 14.0
+   },
+   {
+    "buyer": "How about we try for 15% off the asking price?",
+    "seller": "Thanks for your offer, but I can't accept that price. How about $375? I can also include a case and free delivery in Accra. Let me know what you think!",
+    "streamed": [],
+    "t": 19.6
+   },
+   {
+    "buyer": "Could you go down to 10% off the asking price?",
+    "seller": "I appreciate your offer, but I can't go lower than $370 at this time. How about that? I can also include a case and free delivery in Accra. Let me know if that works for you!",
+    "streamed": [],
+    "t": 25.0
+   },
+   {
+    "buyer": "How about we meet at 5% off the asking price?",
+    "seller": "I can't go below $370 right now, but I'm happy to offer you that price. Plus, I'll include a case and free delivery in Accra to make it even better. Let me know if that works for you!",
+    "streamed": [],
+    "t": 30.4
+   },
+   {
+    "buyer": "WALK.",
+    "seller": null,
+    "t": 31.3
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 31.3
+}

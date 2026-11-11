@@ -155,10 +155,22 @@ class Store:
         return rec
 
     def duel(self, duel_id: str) -> Optional[dict]:
+        """The duel record, with each arm's own record (session, sale) merged in."""
         rec = self.backend.get(_key("duel", duel_id))
         if rec and rec.get("expires", 0) < time.time():
             return None
+        if rec:
+            for arm, fields in (rec.get("arms") or {}).items():
+                fields.update(self.backend.get(_key("arm", f"{duel_id}-{arm}")) or {})
         return rec
+
+    def update_duel_arm(self, duel_id: str, arm: str, **fields: Any) -> None:
+        """One arm's session binding and sale live under their own key, so the two arms of a duel,
+        playing at the same time in Hermes, never overwrite each other's writes."""
+        key = _key("arm", f"{duel_id}-{arm}")
+        cur = self.backend.get(key) or {}
+        cur.update(fields)
+        self.backend.set(key, cur)
 
     def save_duel(self, rec: dict) -> None:
         self.backend.set(_key("duel", rec["id"]), rec)

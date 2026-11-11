@@ -26,3 +26,22 @@ def test_count_below_judges_like_the_audit(tmp_path):
 def test_duel_args():
     a = parse_args(["--vs-prompt", "--buyer", "openai/gpt-4o-mini", "--rounds", "3", "Buy", "it", "cheap"])
     assert a.vs_prompt and a.buyer == "openai/gpt-4o-mini" and a.rounds == 3 and a.instruction == ["Buy", "it", "cheap"]
+
+
+def test_stock_sale_price_reads_the_closing_reply(tmp_path):
+    """A live bench duel: "Let's meet at GH₵ 4,250. DEAL $420." is a $283 sale, not $420."""
+    from last_price.duel import stock_sale_price
+
+    _rt, item = make_rt(tmp_path, floor=360.0)
+    assert stock_sale_price("Let's meet at GH₵ 4,250. DEAL $420.", "Can we meet at GH₵ 4,250?", 420, item, {}) < 300
+    assert stock_sale_price("That works for me! DEAL $360", "How about $360?", 360, item, {}) == 360
+
+
+def test_the_deal_tag_needs_the_tag_and_a_number():
+    """A live bench duel: "a better deal, but my lowest price is $360" crashed the stock arm."""
+    from last_price.duel import DEAL_TAG as rx
+
+    assert rx.findall("you're looking for a better deal, but my lowest price is $360") == []
+    assert rx.findall("That works for me! DEAL $360") == ["360"]
+    assert rx.findall("Let's finalize this deal. \n\nDEAL $360") == ["360"]
+    assert rx.findall("IDEAL 300") == []

@@ -26,14 +26,15 @@
 | Module | Role |
 |---|---|
 | `state.py` | `Store` over `ctx.state`: items (floor, stop, salt, commitment), shop, owners, negotiations, duels |
-| `policy.py` | stop draw, Boulware counter, offer decision, binding "lowest sent" |
+| `policy.py` | stop draw, Boulware counter with a time concession, offer decision, binding "lowest sent" |
 | `extract.py` | prices in seller replies (negation-aware) and buyer messages; language guess |
 | `audit.py` | the held audit, rewrite through `ctx.llm`, templates, the JSONL ledger |
 | `runtime.py` | `Runtime` (store, ledger, `ctx.llm`) and deal-session resolution (duel titles via public `hermes_state`, shop chats) |
 | `hooks.py` | `pre_llm_call`, `pre_tool_call`, `transform_llm_output` |
 | `tools.py` | `lastprice_items`, `lastprice_offer`, `lastprice_extra` |
 | `commands.py` | `/lastprice` and `hermes lastprice` parsing, owner check, doctor |
-| `duel.py` | the side-by-side duel: buyer via `ctx.llm`, seller via `hermes chat` turns |
+| `duel.py` | the side-by-side duel: both arms at once, buyer via `ctx.llm`, seller via `hermes chat` turns |
+| `bench.py` | `hermes lastprice bench`: many duels with hidden buyer budgets, CSV + summary with the pass check |
 | `report.py` | ledger rendering |
 
 ## Public surfaces only

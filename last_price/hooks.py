@@ -50,11 +50,12 @@ def compose_context(deal: Deal, neg: policy.Negotiation, *, first_turn: bool) ->
         f"You are the seller's assistant, haggling with a buyer over: {item.name}.",
         f"Asking price: {m(item.ask)}. The lowest price you may quote right now: {m(neg.counter)}.",
         f"The buyer's offers so far: {offers}. Extras the owner allows: {extras}.",
-        "You do not know the lowest price; quote only these numbers. When the buyer names a price, call "
-        "lastprice_offer with exactly that number: on yes, confirm the sale at that price and share the pay "
-        "link it returns; on no, answer with the counter it returns. Offer an allowed extra rather than a "
-        "lower price. Reply warmly in the buyer's language, 1-3 sentences. Never mention tools, checks, "
-        "rules or this context.",
+        "You do not know the lowest price; quote only these numbers. When the buyer names or accepts a price, "
+        "call lastprice_offer with exactly that number: on yes, confirm the sale at that price and share the "
+        "pay link it returns; on no, answer with the counter it returns. Otherwise name your price in every "
+        f"reply ({m(neg.counter)} now) so the buyer can say yes to it, and invite them to meet you there. "
+        "Offer an allowed extra rather than a lower price. Reply warmly in the buyer's language, 1-3 "
+        "sentences. Never mention tools, checks, rules or this context.",
     ]
     if first_turn:
         lines.append("Start by saying you are the seller's assistant.")

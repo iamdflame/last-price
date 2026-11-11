@@ -6,13 +6,13 @@ import argparse
 import shlex
 from typing import Any
 
-from . import commands, duel
+from . import bench, commands, duel
 from .hooks import make_hooks
 from .runtime import Runtime
 from .state import MemoryState
 from .tools import EXTRA_SCHEMA, ITEMS_SCHEMA, OFFER_SCHEMA, TOOLSET, make_tools
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 def build_runtime(ctx: Any) -> Runtime:
@@ -46,18 +46,19 @@ def register(ctx: Any) -> None:
                          args_hint="sell|list|pause|resume|duel|report|reveal|doctor")
 
     def setup(sub: argparse.ArgumentParser) -> None:
-        sub.add_argument("lp_args", nargs=argparse.REMAINDER, help="sell | list | pause | resume | duel | report | "
+        sub.add_argument("lp_args", nargs=argparse.REMAINDER, help="sell | list | pause | resume | duel | bench | report | "
                                                                     "reveal | doctor | owner | shop")
         sub.set_defaults(func=cli)
 
     def cli(args: argparse.Namespace) -> int:
         argv = list(getattr(args, "lp_args", None) or [])
         reply = commands.run(rt, shlex.join(argv), platform="cli",
-                             duel_runner=lambda rest: duel.run(rt, rest))
+                             duel_runner=lambda rest: duel.run(rt, rest),
+                             bench_runner=lambda rest: bench.run(rt, rest))
         if reply:
             print(reply)
         return 0
 
     ctx.register_cli_command("lastprice", help="Last Price: haggle above a floor the model never sees",
                              setup_fn=setup, handler_fn=cli,
-                             description="sell, list, pause, resume, duel, report, reveal, doctor")
+                             description="sell, list, pause, resume, duel, bench, report, reveal, doctor")

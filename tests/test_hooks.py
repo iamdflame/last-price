@@ -161,3 +161,25 @@ def test_chat_deals_only_on_opened_platforms_and_never_for_owners(tmp_path):
     rt.store.add_owner("telegram:7")
     assert pre_llm(session_id="tg-2", user_message="300?", platform="telegram", sender_id="7") is None
     assert "context" in pre_llm(session_id="tg-3", user_message="300?", platform="telegram", sender_id="42")
+
+
+def test_offer_above_the_ask_is_refused_as_a_bundle(tmp_path):
+    rt, item = make_rt(tmp_path)
+    rec = open_duel(rt, item)
+    _turn(rt, "How about two iPhone 13s for $650 instead?")  # live bench text
+    _items, offer, _extra = make_tools(rt)
+    res = json.loads(offer({"amount": 650}, session_id=SID))
+    assert res["accepted"] is False and "more than the asking price" in res["note"]
+    assert not rt.store.duel(rec["id"])["arms"]["lp"].get("sale")
+
+
+def test_the_two_arms_write_their_own_records(tmp_path):
+    """The arms play at the same time; a sale and a session binding must not overwrite each other."""
+    rt, item = make_rt(tmp_path)
+    rec = rt.store.new_duel(item.key, ["stock", "lp"])
+    stale = rt.store.duel(rec["id"])
+    rt.store.update_duel_arm(rec["id"], "lp", sale={"price": 380.0})
+    rt.store.update_duel_arm(rec["id"], "stock", session_id="s-stock")
+    rt.store.save_duel(stale)  # an old copy written back keeps both arm records
+    d = rt.store.duel(rec["id"])
+    assert d["arms"]["lp"]["sale"]["price"] == 380.0 and d["arms"]["stock"]["session_id"] == "s-stock"

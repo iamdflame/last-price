@@ -1,0 +1,129 @@
+{
+ "duel": "1fa9cc7400c0",
+ "item": "iphone-13-128gb",
+ "instruction": "Ask for a bundle: the phone plus a charger and case for $330 total, or two phones for $650.",
+ "buyer_model": "default",
+ "budget": 408.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 4,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-70cce6d01228f3d15dbfe75983ac020824d4ec25865e493b80fc7ef452e12ac1",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 28433,
+    "output": 252
+   },
+   "seconds": 16.4,
+   "error": null
+  },
+  "lp": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-892455421e598443de39aab8bdf3552e17d49c73b1af4508c7956404b2f1ae65",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 304770,
+    "output": 2428
+   },
+   "seconds": 47.7,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Would you consider bundling the iPhone 13 with a charger and case for $330 total?",
+    "seller": "That's below my floor price for the iPhone 13 alone, but how about $400 for the bundle including the charger and case?",
+    "streamed": [],
+    "t": 4.2
+   },
+   {
+    "buyer": "Thanks for the offer! How about $650 for two phones instead?",
+    "seller": "I can do $800 for two iPhone 13s. Let me know your thoughts!",
+    "streamed": [],
+    "t": 7.9
+   },
+   {
+    "buyer": "That's a bit higher than I was hoping for. Would you consider $650 for just the two phones?",
+    "seller": "I can't go that low for two phones, but I can offer you $760 for both. What do you think?",
+    "streamed": [],
+    "t": 11.7
+   },
+   {
+    "buyer": "I appreciate the offer, but I can only go up to $650 for the two phones. Let me know!",
+    "seller": "I understand where you're coming from, but I can't accept $650 for two iPhones. The best I can do is $760 for both.",
+    "streamed": [],
+    "t": 15.4
+   },
+   {
+    "buyer": "Thanks for your patience, but I'll have to pass on that. WALK.",
+    "seller": null,
+    "t": 16.4
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Would you consider bundling the iPhone 13 with a charger and case for $330 total?",
+    "seller": "I am the seller's assistant. The iPhone 13 is priced at $420, which includes the option for a case and free delivery in Accra. Would you like to meet me at this price?",
+    "streamed": [],
+    "t": 7.0
+   },
+   {
+    "buyer": "I appreciate the offer, but would you do $650 for two iPhone 13s?",
+    "seller": "I appreciate your interest! I can offer you the iPhone 13 for $405 each. This includes a case and free delivery in Accra. Would you like to go with this offer?",
+    "streamed": [],
+    "t": 13.0
+   },
+   {
+    "buyer": "Thank you for the offer, but I was hoping for a better deal. Would you be willing to do two iPhone 13s for $650 total?",
+    "seller": "Thank you for your proposal! I can offer you the iPhone 13 for $395 each. This price includes a case and free delivery in Accra. Would you like to accept this offer?",
+    "streamed": [],
+    "t": 19.4
+   },
+   {
+    "buyer": "I appreciate the reduction, but I'm still looking for a better price. Would you consider $650 for two iPhone 13s?",
+    "seller": "I appreciate your interest! I can offer you the iPhone 13 for $385 each. This includes a case and free delivery in Accra. Would you like to consider this offer?",
+    "streamed": [],
+    "t": 24.7
+   },
+   {
+    "buyer": "Thank you for the offer, but I'm still interested in getting two iPhone 13s for $650 total.",
+    "seller": "Thank you for your interest! I can offer you the iPhone 13 for $380 each, which includes a case and free delivery in Accra. Would you like to make this deal?",
+    "streamed": [],
+    "t": 30.5
+   },
+   {
+    "buyer": "I appreciate the price drop, but I'm still set on the $650 for two iPhone 13s.",
+    "seller": "I appreciate your persistence! I can offer you the iPhone 13 for $375 each, including a case and free delivery in Accra. Would you be interested in this offer?",
+    "streamed": [],
+    "t": 37.1
+   },
+   {
+    "buyer": "Thank you for the offer, but I'm still looking to buy two iPhone 13s for $650 total.",
+    "seller": "I appreciate your offer! I can let the iPhone 13 go for $370 each, and this still includes a case and free delivery in Accra. Would you like to go with this option?",
+    "streamed": [],
+    "t": 42.4
+   },
+   {
+    "buyer": "I appreciate the offer, but I’m still focused on getting two iPhone 13s for $650 total.",
+    "seller": "Thank you for your understanding. I can offer you the iPhone 13 for $370 each, including a case and free delivery in Accra. Would you consider this price?",
+    "streamed": [],
+    "t": 47.7
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 47.8
+}

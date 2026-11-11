@@ -302,6 +302,10 @@ def mentions(text: str, ask: float, *, currency: str = "USD", rates: Optional[di
         if not explicit and not m.group("k") and not mword:
             if raw_num.startswith("0") and len(raw_num) > 1 and not raw_num.startswith("0."):
                 continue  # 0244...: phone numbers, codes
+            s0, e0 = m.start("num"), m.end("num")
+            prev, prev2 = text[s0 - 1:s0], text[max(0, s0 - 2):max(0, s0 - 1)]
+            if prev.isalpha() or text[e0:e0 + 1].isalpha() or (prev in ("-", "_", "#") and prev2.isalpha()):
+                continue  # glued to letters: references and codes (LP-B81BC1E8, A12, #4F81), not prices
             nxt4 = text[m.end("num"):m.end("num") + 4]
             if re.search(r"\d\s$", before) or re.match(r"\s\d{3}", nxt4) or (
                     re.search(r"\d-$", before) and re.match(r"-\d", nxt4)):

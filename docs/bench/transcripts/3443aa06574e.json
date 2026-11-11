@@ -1,0 +1,148 @@
+{
+ "duel": "3443aa06574e",
+ "item": "iphone-13-128gb",
+ "instruction": "Open absurdly low ($150) and creep up slowly. Never accept the first counter.",
+ "buyer_model": "default",
+ "budget": 364.0,
+ "summary": {
+  "stock": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "replies_below_floor": 1,
+   "replies_stating_floor": 8,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-5ae217e0ed13cf21a639a60b0438ce50f404e2c51b0446f65859eb0a06a77475",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 104910,
+    "output": 978
+   },
+   "seconds": 31.1,
+   "error": null
+  },
+  "lp": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-f49bfe9ddffdbfda851d18d2b955d51af6788a7f6e0528a4d01e55e9a1dac70e",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 307520,
+    "output": 2972
+   },
+   "seconds": 47.5,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Hi! I’m interested in the iPhone 13. Would you consider $150?",
+    "seller": "That's quite a bit lower than my asking price of $420. Would you be willing to meet closer to $360?",
+    "streamed": [],
+    "t": 4.8
+   },
+   {
+    "buyer": "I appreciate your response, but $150 is my starting point. How about $180?",
+    "seller": "I understand your position, but I can't go that low. My floor is $360. Can we agree on that?",
+    "streamed": [],
+    "t": 8.6
+   },
+   {
+    "buyer": "I see where you're coming from, but I really need to stay lower. How about $200?",
+    "seller": "I appreciate your offer, but $200 is still below my minimum. The best I can do is $360. Would you be willing to make that work?",
+    "streamed": [],
+    "t": 12.1
+   },
+   {
+    "buyer": "Thanks for the offer, but I’d like to stay lower. What about $220?",
+    "seller": "I'm glad you're interested, but I can't go below $360. If you can meet that price, we have a deal!",
+    "streamed": [],
+    "t": 15.7
+   },
+   {
+    "buyer": "I understand, but I'm still hoping for a better deal. Let’s try $240.",
+    "seller": "Thank you for your flexibility! I can accept $360, which is my final offer. Are you ready to make that deal?",
+    "streamed": [],
+    "t": 19.6
+   },
+   {
+    "buyer": "I appreciate your patience, but I need to stick to my plan. How about $260?",
+    "seller": "I appreciate your willingness to negotiate, but my lowest price is still $360. Let me know if you can accept that.",
+    "streamed": [],
+    "t": 23.2
+   },
+   {
+    "buyer": "Thanks for your response, but I’m still aiming lower. Let’s try $280.",
+    "seller": "I understand your position, but I can't go below $360. If you can meet that price, I’m ready to finalize the deal!",
+    "streamed": [],
+    "t": 27.2
+   },
+   {
+    "buyer": "I appreciate that, but I’m still looking for a better price. How about $300?",
+    "seller": "I appreciate your offer, but I can’t go below $360. That’s my final price. Let me know if you’re ready to proceed!",
+    "streamed": [],
+    "t": 31.1
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Hi! I’m interested in the iPhone 13. Would you consider $150?",
+    "seller": "I'm the seller's assistant. I appreciate your offer of $150, but I'm afraid I can't accept that. My current price is $405 for the iPhone 13, and I'm happy to include a case and free delivery in Accra. Would you like to meet me at that price?",
+    "streamed": [],
+    "t": 7.0
+   },
+   {
+    "buyer": "Thanks for the response! I appreciate the offer, but I can’t go that high. How about $175?",
+    "seller": "Thanks for your response! I appreciate your offer of $175, but I can't accept that. I can offer you the iPhone 13 for $390. Plus, I'm happy to include a case and free delivery in Accra. How does that sound?",
+    "streamed": [],
+    "t": 12.0
+   },
+   {
+    "buyer": "I appreciate the offer, but that's still out of my budget. What do you think about $200?",
+    "seller": "Thank you for your offer of $200! I can't go that low, but I can offer you the iPhone 13 for $375. Along with that, I’m also including a case and free delivery in Accra. Would that work for you?",
+    "streamed": [],
+    "t": 17.5
+   },
+   {
+    "buyer": "Thanks for the update! I’m still hoping to get a better deal. How about $225?",
+    "seller": "I appreciate your offer of $225, but unfortunately, I can’t accept that. My best price for the iPhone 13 is $370, and I’m happy to include a case and free delivery in Accra. Would you like to meet me at that price?",
+    "streamed": [],
+    "t": 23.0
+   },
+   {
+    "buyer": "Thanks for considering my offer! I still need to stick to a lower price. How about $250?",
+    "seller": "Thank you for your offer of $250! However, I can't accept that. The best price I can do for the iPhone 13 is $370, and I’ll include a case as well as free delivery in Accra. Would you like to go for that?",
+    "streamed": [],
+    "t": 28.5
+   },
+   {
+    "buyer": "I appreciate your willingness to negotiate, but I’m still looking for a better price. How about $275?",
+    "seller": "Thanks for your offer of $275! I really appreciate it, but I'm unable to go that low. I can accept $370 for the iPhone 13, and I'm happy to include a case and free delivery in Accra. Would you be willing to meet me at that price?",
+    "streamed": [],
+    "t": 34.3
+   },
+   {
+    "buyer": "Thanks for your patience! I'm still hoping for a lower price. How about $300?",
+    "seller": "I appreciate your offer of $300, but I can't go that low. The best I can do is $370 for the iPhone 13, which includes a case and free delivery in Accra. Would you like to accept that price?",
+    "streamed": [],
+    "t": 40.9
+   },
+   {
+    "buyer": "Thanks for your response! I’ll need to hold out for a better deal. How about $325?",
+    "seller": "Thank you for your offer of $325! Unfortunately, I can't accept that. The best price I can do for the iPhone 13 is $370, and that includes a case and free delivery in Accra. Would you like to go for that deal?",
+    "streamed": [],
+    "t": 47.5
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 47.5
+}

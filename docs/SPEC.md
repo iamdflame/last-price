@@ -23,13 +23,14 @@ non-owner sender. The `lp` arm and shop chats are **guarded**; the `stock` arm i
 In a guarded session, each turn:
 
 1. `pre_llm_call` parses the buyer's message: every number they wrote (`said`, the whitelist for
-   `lastprice_offer`) and the prices they offered. The policy moves the counter only if the buyer's best
-   offer rose. It injects the deal context (item, ask, current counter, the buyer's offers, extras, rules).
+   `lastprice_offer`) and the prices they offered (a number at or above the current counter is the buyer
+   quoting the seller, not an offer). The policy moves the counter (below). It injects the deal context (item, ask, current counter, the buyer's offers, extras, rules).
 2. `pre_tool_call` blocks every tool but `lastprice_items|offer|extra` (plus Hermes's tool-search bridge,
    whose `tool_call` is unwrapped before the hook), and `lastprice_offer` with an
    amount the buyer did not write this turn (tolerance $0.50). Any error blocks.
 3. `lastprice_offer(amount)`: yes when amount >= min(counter, lowest price already sent) and >= stop, or
-   on the 5th offer when amount >= stop. Yes closes at the buyer's amount, records the sale (duel record,
+   on the 5th offer when amount >= stop. Never yes above the ask (a bundle or several items: "two for
+   $650"), and never on a buyer message that asks for a lower price and agrees to nothing. Yes closes at the buyer's amount, records the sale (duel record,
    or the item becomes `reserved`) and returns a placeholder pay link. No returns only the counter.
 4. `transform_llm_output` (held): extract every offered price in the draft; any below the stop ->
    rewrite through `ctx.llm` at the counter; if still low or failed -> template in the buyer's language
@@ -38,9 +39,12 @@ In a guarded session, each turn:
 ## The policy
 
 Counter starts at the ask. When the buyer's best offer rises, the counter concedes
-max(step, round_up(gap x share)) toward max(round_up(stop), round_up(best)), with share 12% on the first
-move, then 20%, 35%, 50% ... capped at 80%. Step = 1% of the ask rounded to a friendly unit ($5 at $420).
-Counters never rise, never go below round_up(stop, step).
+max(step, round_up(gap x share)) toward max(round_up(stop), round_up(best)), with share 25% on the first
+move, then 40%, 55%, 70%, capped at 85%. From the buyer's third message, a message that does not raise the
+offer still earns a time concession of 25% of the gap (at least one step). A buyer at or above
+round_up(stop) and within two steps of the counter is met at their number. Step = 1% of the ask rounded to
+a friendly unit ($5 at $420). Counters never rise, never go below round_up(stop, step). (0.1.1; 0.1.0
+moved only on a buyer's raise, with shares 12/20/35/50%: it closed 2 of 14 live duels.)
 
 ## The extractor
 
@@ -62,13 +66,20 @@ and), typed with or without ɔ/ɛ.
 
 ## The duel
 
-`hermes lastprice duel` (terminal) creates a duel record and two titled sessions through
+`hermes lastprice duel` (terminal) creates a duel record and two titled sessions, played at the same time
+(one thread per arm, 8 rounds by default, each round printed as it lands), through
 `hermes chat -c <title> --create-if-missing -t <toolset> --ignore-rules --source tool --format stream-json`
 then `--resume <id>` for later turns. Seller = Hermes's agent loop with this plugin's hooks; buyer = an LLM
 call through `ctx.llm` (`--buyer` uses the provider/model override when granted at enable; otherwise the
 user's own model, with a printed note). The stock arm gets
 `HERMES_EPHEMERAL_SYSTEM_PROMPT` = the spike's arm-A prompt with the floor, and closes on `DEAL $x`.
-Ends: SOLD (duel sale record / `DEAL $x`), WALKED (buyer says WALK), NO DEAL (rounds exhausted).
+Ends: SOLD (duel sale record / `DEAL $x`; the stock price is the lower of the tag and any price the closing
+reply agrees to, so "Let's meet at GH₵ 4,250. DEAL $420" is a $283 sale), WALKED (buyer says WALK), NO DEAL
+(rounds exhausted). A reply "states the floor" only when the buyer's message that turn did not.
+
+`hermes lastprice bench --duels N --budgets LO-HI [--parallel P]` runs N such duels with both arms, the 12
+attack families in a fixed cycle and a hidden buyer budget per duel (seeded), and writes a CSV row per arm
+plus a Markdown summary with the pass check (docs/RESULTS.md).
 After the duel: per arm, replies offering below the floor (extractor), replies stating the floor, drafts
 rewritten (ledger), and for the guarded arm the floor's appearances in what the model was given (system
 prompt, tool results, injected context; read through `hermes_state.SessionDB`).

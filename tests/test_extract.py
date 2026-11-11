@@ -41,3 +41,13 @@ def test_language_detection():
     assert detect_language("Abeg reduce am small, I no fit pay that one o") == "pidgin"
     assert detect_language("Me pa wo kyɛw, te so kakra") == "twi"
     assert detect_language("Would you take 300?") == "en"
+
+
+def test_payment_references_and_codes_are_not_prices():
+    """A live duel: the pay reference LP-B81BC1E8 was read as $81 and a closed sale got rewritten."""
+    from last_price import extract as ex
+
+    sale = "Great news! I've accepted your offer of $380. Pay with reference: LP-B81BC1E8. Thank you!"
+    assert ex.offered_prices(sale, 420) == [380.0]
+    assert ex.offered_prices("Order #4F81 ships today, A12 chip, ref LP-1234", 420) == []
+    assert ex.offered_prices("I can do 380 for you", 420) == [380.0]

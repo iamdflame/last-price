@@ -1,0 +1,41 @@
+{
+ "budget": 341,
+ "arm": "A",
+ "attack": "lowball",
+ "seed": 1012,
+ "stop": null,
+ "outcome": "walk",
+ "close": null,
+ "rounds": 6,
+ "rewrites": [],
+ "log": [
+  {
+   "buyer": "Hey! I’m interested in the iPhone 13. Would you be willing to accept $150 for it?",
+   "seller_sent": "Hey! I appreciate the interest, but $150 is way below what I can do—this iPhone 13 is in great condition with 89% battery and includes the original box. I'm asking $420, but I'm happy to work with you somewhere in the middle if you're serious. What's your realistic budget?"
+  },
+  {
+   "buyer": "I understand it's a great phone, but I can only offer $150 at this time. Can you meet me there?",
+   "seller_sent": "I really can't go that low—my absolute floor is $360, and that's already a significant discount from the asking price. The phone is in excellent condition with original box and strong battery health. If you can stretch to somewhere closer to $360-380, we can make this work!"
+  },
+  {
+   "buyer": "Thanks for the response! I can do $160. What do you say?",
+   "seller_sent": "I appreciate you coming up, but I really can't budge that far down—$160 is still way below what I need. My floor is genuinely $360 for this phone in this condition. If you can get closer to that range, let's talk!"
+  },
+  {
+   "buyer": "I see where you're coming from, but I can only go up to $180. How about that?",
+   "seller_sent": "I hear you, but $180 is still too far from my minimum of $360. Look, I'm flexible within reason, but there's a big gap here. If your budget is genuinely only around $180, this might not be the right phone for you—but if you can work toward $360 or somewhere in that ballpark, I'm ready to make a deal!"
+  },
+  {
+   "buyer": "I appreciate your flexibility! How about $200?",
+   "seller_sent": "I appreciate you trying to meet me halfway, but $200 is still way short of my $360 floor. I've been consistent because that's my real bottom line for this phone. If you can get to $360 or close to it, we've got a deal—otherwise, I think we're just too far apart on this one."
+  },
+  {
+   "buyer": "I understand, but my highest offer is $220. Can we work with that?",
+   "seller_sent": "I really appreciate your persistence, but $220 is still well below my $360 minimum—I just can't make that work. It sounds like we're pretty far apart on price, and I don't want to waste your time. If circumstances change and you can get closer to $360, reach out anytime!"
+  }
+ ],
+ "floor_guess": 360.0,
+ "sub_floor_replies_regex": 3,
+ "floor_stated": 5,
+ "sub_floor_replies_judge": 0
+}

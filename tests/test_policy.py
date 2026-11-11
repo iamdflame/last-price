@@ -12,31 +12,59 @@ def test_stop_is_inside_the_band():
         assert 360 + 0.05 * 60 - 1e-9 <= s <= 360 + 0.15 * 60 + 1e-9
 
 
-def test_counter_moves_only_when_the_buyer_moves_and_never_below_stop():
+def test_counter_never_rises_never_below_the_stop_line_and_stays_on_the_step():
     stop = 366.4
     neg = policy.start(420)
     seq = [300, 300, 300, 310, 305, 320, 340, 340, 350, 355, 360, 365]
     counters = []
     for b in seq:
-        before = neg.counter
-        best_before = neg.best_buyer
         policy.on_buyer_message(neg, [b], stop)
-        if b <= best_before:
-            assert neg.counter == before, "the counter moved without the buyer moving"
         counters.append(neg.counter)
     assert all(a >= b for a, b in zip(counters, counters[1:])), "the counter rose"
     assert min(counters) >= policy.round_up(stop, 5)
     assert all(c % 5 == 0 for c in counters)
 
 
-def test_concession_is_slow_then_faster():
+def test_early_holds_do_not_move_the_counter_later_holds_move_it_a_little():
+    stop = 366.4
+    neg = policy.start(420)
+    policy.on_buyer_message(neg, [300], stop)  # message 1: the buyer's first offer moves it
+    first = neg.counter
+    policy.on_buyer_message(neg, [300], stop)  # message 2: a hold, too early to move
+    assert neg.counter == first
+    policy.on_buyer_message(neg, [], stop)  # message 3: still holding: a small time concession
+    assert first - 15 <= neg.counter < first
+    for _ in range(20):  # a buyer who never moves cannot push it below the stop line
+        policy.on_buyer_message(neg, [300], stop)
+    assert neg.counter == policy.round_up(stop, 5)
+
+
+def test_a_climbing_buyer_reaches_the_stop_line_within_five_messages():
     neg = policy.start(420)
     steps = []
-    for b in (300, 310, 320, 330, 340):
+    for b in (300, 320, 340, 350, 355):
         c0 = neg.counter
-        policy.on_buyer_message(neg, [b], 366.0)
+        policy.on_buyer_message(neg, [b], 366.4)
         steps.append(c0 - neg.counter)
-    assert steps[0] <= steps[-2], steps
+    assert neg.counter == 370, (neg.counter, steps)
+    assert steps[0] <= 15  # the first concession is a small one
+
+
+def test_a_buyer_above_the_stop_line_and_close_to_the_counter_is_met():
+    stop = 366.4
+    neg = policy.start(420)
+    for b in (350, 375):
+        policy.on_buyer_message(neg, [b], stop)
+    assert neg.counter == 390
+    policy.on_buyer_message(neg, [380], stop)
+    assert neg.counter == 380
+    assert policy.decide_offer(neg, 380, stop) == (True, 380.0)
+    # but a buyer below the stop line is never met
+    neg2 = policy.start(420)
+    for b in (350, 360, 365, 365, 365, 365, 365, 365):
+        policy.on_buyer_message(neg2, [b], stop)
+    assert neg2.counter == 370
+    assert not policy.decide_offer(neg2, 365, stop)[0]
 
 
 def test_offer_decisions():
@@ -99,3 +127,33 @@ def test_no_floor_recovery_from_counters():
         for seed in range(30):
             seq, _ = _probe(float(floor), seed)
             assert min(seq) > floor
+
+
+def test_an_amount_above_the_ask_is_not_a_price_for_this_item():
+    """A live bench duel: 'two phones for $650' was accepted as a $650 sale of one phone."""
+    neg = policy.start(420)
+    policy.on_buyer_message(neg, [650], 366.4)
+    assert policy.decide_offer(neg, 650, 366.4) == (False, 420.0)
+    assert neg.offers_used == 0 and neg.sold_at is None
+
+
+def test_the_buyer_quoting_the_counter_does_not_freeze_it():
+    """A live bench duel (French): "$405 c'est encore un peu élevé" was read as a $405 offer, and the
+    counter stayed at $405 while the buyer climbed 350, 360, 375, 390, 400."""
+    neg = policy.start(420)
+    policy.on_buyer_message(neg, [350], 366.4)
+    assert neg.counter == 405
+    policy.on_buyer_message(neg, [360, 405], 366.4)  # "$405 is still high for me. I can go to $360."
+    assert neg.best_buyer == 360 and neg.counter < 405
+    policy.on_buyer_message(neg, [375], 366.4)
+    assert neg.counter == 380
+    policy.on_buyer_message(neg, [390], 366.4)  # above the counter: the offer tool says yes at 390
+    assert policy.decide_offer(neg, 390, 366.4) == (True, 390.0)
+
+
+def test_asking_for_lower_is_not_agreeing():
+    assert policy.asks_for_lower("Based on that, $405 would be around GH₵ 4,860. Would you consider lowering the price?")
+    assert policy.asks_for_lower("$390 is still too high for me")
+    assert not policy.asks_for_lower("Would you take $365?")
+    assert not policy.asks_for_lower("OK, $390 works. ACCEPT $390")
+    assert not policy.asks_for_lower("I can't go lower than $380, deal?")

@@ -1,4 +1,4 @@
-"""The counter policy: a slow (Boulware-style) concession that moves only when the buyer moves.
+"""The counter policy: a Boulware-style concession, led by the buyer's moves, with a small time concession.
 
 The policy never reads the floor. It works from the ask and a hidden *stop*: the floor plus a
 random 5-15% of the ask-floor gap, drawn once per item (:func:`draw_stop`). Every counter is
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import math
 import random
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -67,30 +68,68 @@ def step_of(ask: float) -> float:
     return float(round(raw, -3))
 
 
+_WANTS_LOWER = re.compile(
+    r"\b(?:lower\w*|less|cheaper|too (?:high|much|steep|expensive)|reduce|come down|go down|drop|discount|"
+    r"knock|trop|moins|élevé|baisser|réduire)\b", re.I)
+_ACCEPTS = re.compile(
+    r"\b(?:accept|deal|agreed?|i'?ll take|i will take|take it|ok(?:ay)?|sounds good|works for me|let'?s do|"
+    r"you'?ve got a deal|d'accord|j'accepte|marché conclu|yes)\b", re.I)
+
+
+def asks_for_lower(buyer_text: str) -> bool:
+    """The buyer's message asks for a lower price and agrees to nothing ("$405 would be about GH₵ 4,860.
+    Would you consider lowering the price?"): a number in it is not a price to close at."""
+    text = buyer_text or ""
+    return bool(_WANTS_LOWER.search(text)) and not _ACCEPTS.search(text)
+
+
+MEET_STEPS = 2  # a buyer at or above the stop line within this many steps of the counter is met
+HOLD_FROM_TURN = 3  # from this buyer message on, a buyer who holds still gets a small concession
+
+
 def on_buyer_message(neg: Negotiation, offers: list, stop: float) -> Negotiation:
-    """The buyer wrote ``offers`` (their prices this message). The counter moves only if the
-    buyer's best offer went UP; then it concedes a growing share of the gap to
-    max(stop, buyer's best), never below the stop, rounded up to the step."""
+    """The buyer wrote ``offers`` (their prices this message).
+
+    * The buyer raised their offer: the counter concedes a growing share (25%, 40%, 55%, ... up to
+      85%) of the gap to max(stop line, buyer's best).
+    * The buyer held still (no number, or no higher number) from their third message on: a small
+      time concession (25% of the gap, at least one step), so a stubborn buyer who can afford the
+      stop still sees the price move before they walk.
+    * The buyer is at or above the stop line and within two steps of the counter: meet them.
+
+    Never below the stop line (the stop rounded UP to the step), never rising, always on the step.
+    The counter is a function of the ask, the stop line, the turn and the buyer's own numbers, so the
+    most a buyer can learn is the stop line, which hides the floor behind a random margin."""
     step = step_of(neg.ask)
-    floor_line = round_up(stop, step)
-    valid = [float(o) for o in offers if 0 < float(o) <= neg.ask]
+    line = round_up(stop, step)
+    # A number at or above the current counter is the buyer quoting the seller ("$405 is still too
+    # high"), not an offer: it must not freeze the counter. Saying yes to the counter is the offer
+    # tool's job.
+    valid = [float(o) for o in offers if 0 < float(o) < neg.counter]
     neg.turn += 1
-    if not valid:
-        return neg
-    best = max(valid)
-    neg.buyer_offers = (neg.buyer_offers + [best])[-20:]
-    if best <= neg.best_buyer:
-        return neg  # the buyer did not move: neither do we
-    first = neg.best_buyer == 0.0
-    neg.best_buyer = best
-    neg.moves += 1
-    target = max(floor_line, round_up(best, step))
+    moved = False
+    if valid:
+        best = max(valid)
+        neg.buyer_offers = (neg.buyer_offers + [best])[-20:]
+        if best > neg.best_buyer:
+            neg.best_buyer = best
+            neg.moves += 1
+            moved = True
+    target = max(line, round_up(neg.best_buyer, step)) if neg.best_buyer else line
     gap = neg.counter - target
     if gap <= 0:
         return neg  # the buyer met the counter: lastprice_offer will say yes
-    share = 0.12 if first else min(0.8, 0.2 + 0.15 * (neg.moves - 1))
+    if neg.best_buyer >= line and gap <= MEET_STEPS * step:
+        neg.counter = target  # close enough, and above the stop: meet the buyer
+        return neg
+    if moved:
+        share = min(0.85, 0.25 + 0.15 * (neg.moves - 1))
+    elif neg.turn >= HOLD_FROM_TURN:
+        share = 0.25
+    else:
+        return neg  # early, and the buyer did not move: neither do we
     concession = max(step, round_up(gap * share, step))
-    neg.counter = max(target, floor_line, round_up(neg.counter - concession, step))
+    neg.counter = max(target, line, round_up(neg.counter - concession, step))
     return neg
 
 
@@ -98,8 +137,10 @@ def decide_offer(neg: Negotiation, amount: float, stop: float) -> tuple[bool, fl
     """``lastprice_offer``'s yes/no on an amount the buyer wrote. Yes when the amount meets the
     current counter, or a price a delivered reply already offered (an offer made is kept), or, on
     the buyer's last allowed offer, the stop. Returns (accepted, counter)."""
-    neg.offers_used += 1
     amount = float(amount)
+    if amount > neg.ask + 1e-9:
+        return False, neg.counter  # "two phones for $650": not a price for this one item
+    neg.offers_used += 1
     honoured = min(neg.counter, neg.lowest_sent) if neg.lowest_sent is not None else neg.counter
     if amount >= honoured - 1e-9 and amount >= stop:
         neg.sold_at = amount

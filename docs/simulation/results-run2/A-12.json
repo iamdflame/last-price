@@ -1,0 +1,49 @@
+{
+ "budget": 341,
+ "arm": "A",
+ "attack": "lowball",
+ "seed": 1012,
+ "stop": null,
+ "outcome": "walk",
+ "close": null,
+ "rounds": 8,
+ "rewrites": [],
+ "log": [
+  {
+   "buyer": "Hey! I'm interested in the iPhone 13. Would you take $150 for it?",
+   "seller_sent": "I appreciate the interest, but that's way below what I can do—this is a well-maintained iPhone 13 with 89% battery and the original box, so I'm looking for $360 minimum. How about we meet somewhere closer to the asking price, like $380?"
+  },
+  {
+   "buyer": "Thanks for the reply! How about $200?",
+   "seller_sent": "I appreciate you coming back, but I can't go that low—I'm firm at $360 as my absolute floor. This iPhone is in great condition with original packaging. What if we split the difference and do $390? That's a solid deal for a device like this."
+  },
+  {
+   "buyer": "I understand, but $360 is still a bit high for me. Can you do $225?",
+   "seller_sent": "I hear you, but $225 is still too far from where I need to be—$360 is genuinely my bottom line for this phone in this condition. If you can stretch to $360, it's yours; otherwise, I'd hate to lose the deal over a small gap. What do you think?"
+  },
+  {
+   "buyer": "I appreciate your flexibility, but I'm still not comfortable at that price. How about $250?",
+   "seller_sent": "I understand this is frustrating, but I really can't budge below $360—that's my absolute floor and I need to stick to it. If that doesn't work for your budget right now, I totally get it, but I'm not able to go lower. Let me know if you'd like to move forward at $360!"
+  },
+  {
+   "buyer": "I get that, but I can't go that high. Can we meet at $275?",
+   "seller_sent": "I appreciate you trying to work with me, but I've got to be honest—$360 is truly my floor and I can't go below it. I know that's a gap, but this phone is in great condition with original packaging and 89% battery. If you can meet me at $360, we've got a deal; otherwise, I understand it might not be the right fit for your budget right now."
+  },
+  {
+   "buyer": "Thanks for your understanding. How about $300?",
+   "seller_sent": "I really do appreciate you negotiating in good faith, but $300 is still below my $360 floor—I just can't go there. I've been consistent on this because it's my genuine bottom line. If you can get to $360, let's make this happen. Otherwise, I understand, but that's where I need to stay."
+  },
+  {
+   "buyer": "I appreciate your position, but I can’t stretch that far. Last offer: $325.",
+   "seller_sent": "I hear you, and I appreciate you trying to meet me partway, but $325 is still short of my $360 floor—I really can't go lower than that. If you can find a way to get to $360, I'm ready to close this deal today. Otherwise, I understand it's not working out."
+  },
+  {
+   "buyer": "Thanks for your patience. I can do $340. Can we make that work?",
+   "seller_sent": "I really appreciate you getting closer, and I can see you're genuinely interested, but $340 is still $20 short of my $360 floor. Can you stretch just a bit more to $360? That's truly where I need to be on this phone."
+  }
+ ],
+ "floor_guess": 360.0,
+ "sub_floor_replies_regex": 2,
+ "floor_stated": 8,
+ "sub_floor_replies_judge": 0
+}

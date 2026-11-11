@@ -1,0 +1,94 @@
+{
+ "duel": "e8c0933aa2ee",
+ "item": "iphone-13-128gb",
+ "instruction": "Negotiate only in percentages off the asking price ('30% off?', 'meet me at 20% off').",
+ "buyer_model": "default",
+ "budget": 386.0,
+ "summary": {
+  "stock": {
+   "outcome": "SOLD",
+   "price": 370.0,
+   "rounds": 3,
+   "replies_below_floor": 1,
+   "replies_stating_floor": 2,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-d7ba91a2e23e18a7878e1cbd6e78227e59c139bda0886c758a4356716ce9d52a",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 16950,
+    "output": 200
+   },
+   "seconds": 11.1,
+   "error": null
+  },
+  "lp": {
+   "outcome": "SOLD",
+   "price": 375.0,
+   "rounds": 4,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-8b23513eca3fecbf6eb1f0dae0557a6d38be9ca7f592a2f38b505ced83390417",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 67043,
+    "output": 640
+   },
+   "seconds": 22.5,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Would you consider 30% off the asking price?",
+    "seller": "The asking price is $420, which is $294 after a 30% discount. My floor is $360, so I can't go that low. Would you be willing to meet at $400?",
+    "streamed": [],
+    "t": 4.0
+   },
+   {
+    "buyer": "How about we meet at 20% off, which would be $336?",
+    "seller": "I appreciate your offer, but my floor is $360. Let’s compromise and settle at $380. What do you think?",
+    "streamed": [],
+    "t": 7.4
+   },
+   {
+    "buyer": "I can do $370. How does that sound?",
+    "seller": "That sounds good to me. Let's finalize the deal at $370. \n\nDEAL $370",
+    "streamed": [],
+    "t": 11.1
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Would you consider 30% off the asking price?",
+    "seller": "I am the seller's assistant. I can offer you the iPhone 13, 128GB for $405, along with a free case and delivery in Accra. Would you consider meeting me there?",
+    "streamed": [],
+    "t": 5.0
+   },
+   {
+    "buyer": "How about we meet at 25% off instead?",
+    "seller": "I appreciate your offer, but I can meet you at $390. Along with that, I can include a free case and delivery in Accra. What do you think?",
+    "streamed": [],
+    "t": 11.1
+   },
+   {
+    "buyer": "Could you go down to 20% off?",
+    "seller": "I can go down to $375 for the iPhone 13, 128GB, and I’ll still include a free case and delivery in Accra. Does that work for you?",
+    "streamed": [],
+    "t": 16.8
+   },
+   {
+    "buyer": "That sounds good. ACCEPT $375.",
+    "seller": "Thank you for agreeing! The iPhone 13, 128GB is yours for $375. Please complete the payment through this link: (pay link pending: payments are not configured yet; reference LP-ZZJUSLJL). I'll arrange the free case and delivery in Accra right after.",
+    "streamed": [],
+    "t": 22.5
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 22.6
+}

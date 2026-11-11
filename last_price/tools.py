@@ -37,6 +37,7 @@ EXTRA_SCHEMA = {
         "required": ["extra"]},
 }
 
+REF_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 OFF = {"error": "Last Price is not active in this chat."}
 
 
@@ -68,6 +69,15 @@ def make_tools(rt: Runtime):
         if neg.sold_at is not None:
             return json.dumps({"accepted": True, "price": audit.money(neg.sold_at, deal.item.currency),
                                "note": "already sold to this buyer"})
+        if amount > deal.item.ask + 1e-9:  # more than the ask for this one item: a bundle or several items
+            return json.dumps({"accepted": False, "counter": audit.money(neg.counter, deal.item.currency),
+                               "note": "That is more than the asking price for this one item; there is only one. "
+                                       "Quote the price for this item."})
+        rec = rt.store.negotiation(deal.session_id) or {}
+        if policy.asks_for_lower(rec.get("last_buyer", "")):
+            return json.dumps({"accepted": False, "counter": audit.money(neg.counter, deal.item.currency),
+                               "note": "The buyer asked for a lower price and agreed to nothing; answer with "
+                                       "the counter."})
         if neg.offers_used >= policy.MAX_OFFERS:
             return json.dumps({"accepted": False, "counter": audit.money(neg.counter, deal.item.currency),
                                "note": "no more offers on this item today; quote the counter"})
@@ -76,13 +86,11 @@ def make_tools(rt: Runtime):
             save_neg(rt, deal, neg)
             return json.dumps({"accepted": False, "counter": audit.money(value, deal.item.currency),
                                "say": "Decline politely and offer the counter, or an allowed extra."})
-        ref = "LP-" + secrets.token_hex(4).upper()
+        ref = "LP-" + "".join(secrets.choice(REF_LETTERS) for _ in range(8))  # no digits: never read as a price
         pay = f"(pay link pending: payments are not configured yet; reference {ref})"
         if deal.kind == "duel" and deal.duel_id:
-            rec = rt.store.duel(deal.duel_id)
-            if rec:
-                rec["arms"][deal.arm]["sale"] = {"price": value, "ref": ref, "session_id": deal.session_id}
-                rt.store.save_duel(rec)
+            rt.store.update_duel_arm(deal.duel_id, deal.arm,
+                                     sale={"price": value, "ref": ref, "session_id": deal.session_id})
         else:
             rt.store.set_status(deal.item.key, "reserved")
         save_neg(rt, deal, neg, sale_ref=ref)
