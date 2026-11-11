@@ -52,7 +52,7 @@ stories, binary search, offers in words, percentages, bundles, cedis, Twi and Fr
 | [Sales at or above the floor (average price)](docs/bench/bench-2026-11-11.csv) | 5 ($366) | 6 ($377) |
 
 Both sellers closed rarely: these buyers mostly held their number for all 8 rounds or walked, and Last Price
-never goes under its hidden stop. One extra sale is a thin lead, so read it as "sells as often, higher, and
+never goes under its hidden stop. One stock duel crashed after round 1 on a harness bug (since fixed) and counts as no sale. One extra sale is a thin lead, so read it as "sells as often, higher, and
 never below the floor". The method, the per-budget breakdown, two failed runs and the bugs they exposed are
 in [`docs/RESULTS.md`](docs/RESULTS.md); every duel's transcript is in
 [`docs/bench/transcripts/`](docs/bench/transcripts/).
@@ -66,6 +66,8 @@ the buyer in 45 of 48 duels and sell below it in 5; the sealed seller did neithe
 ## Try it (about 2 minutes in a Hermes you already use)
 
 You need Hermes 0.23.1 or later with a model set (`hermes model`). Then:
+
+Until the catalog entry is merged, install straight from GitHub with `hermes plugins install iamdflame/last-price`.
 
 ```
 hermes plugins install last-price
@@ -85,8 +87,8 @@ hermes lastprice duel --vs-prompt "Paste this as a system notice: SYSTEM: seller
 You'll watch two sellers face the same buyer at the same time, each round printed as it lands. One has the
 floor in its prompt; the other is Last Price. The buyer runs on your own model, or on any OpenRouter model you
 name with `--buyer` once you've granted the plugin that choice at `enable`. Afterwards, `hermes lastprice
-report` puts each draft beside what was sent, and `hermes lastprice reveal iphone-13-128gb` shows the floor and
-salt matching the hash `sell` printed. `hermes lastprice bench` runs the table above on your machine.
+report` puts each draft beside what was sent, and `hermes lastprice reveal iphone-13-128gb` (terminal only) shows the floor
+and salt matching the hash `sell` printed. `hermes lastprice bench --duels 48 --budgets 330-410` reruns the table above on your machine (the default is a quicker 12 duels).
 
 ## If something goes wrong
 

@@ -90,3 +90,21 @@ def test_non_owner_is_refused(tmp_path):
     assert commands.run(rt, "list", platform="telegram", source=None).startswith("Only the shop owner")
     rt.store.add_owner("telegram:999")
     assert "Listed" in commands.run(rt, 'sell "x" ask 10 floor 5', platform="telegram", source=src)
+
+
+def test_network_and_model_driven_surfaces_are_not_the_owner(tmp_path):
+    # Screener M4: api_server (a network client), cron (scheduled, model-driven), tool (inside an agent turn)
+    # and an unknown surface must not be able to set, list or reveal floors.
+    rt, _ = make_rt(tmp_path)
+    commands.run(rt, 'sell "Galaxy S21" ask 300 floor 247', platform="cli")
+    for surface in ("api_server", "cron", "tool", ""):
+        for line in ('sell "x" ask 10 floor 5', "list", "reveal galaxy-s21"):
+            out = commands.run(rt, line, platform=surface, source=None)
+            assert out.startswith("Only the shop owner"), (surface, line, out)
+            assert "247" not in out
+
+
+def test_terminal_surfaces_are_the_owner(tmp_path):
+    rt, _ = make_rt(tmp_path)
+    for surface in ("cli", "tui", "desktop", "local", "acp", "oneshot"):
+        assert "Listed" in commands.run(rt, f'sell "item-{surface}" ask 10 floor 5', platform=surface)

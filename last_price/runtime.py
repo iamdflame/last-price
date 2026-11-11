@@ -21,6 +21,10 @@ from .audit import Ledger
 from .state import DUEL_TITLE, Item, Store
 
 LOCAL_SURFACES = {"cli", "tui", "desktop", "local", "acp", "api_server", "cron", "oneshot", "tool", ""}
+# Surfaces where a human is typing at their own machine. Only these (plus owner ids added with
+# `hermes lastprice owner add`) may set, list or reveal floors. Not api_server (a network client),
+# cron (scheduled, model-driven), tool (called from inside an agent turn) or "" (unknown).
+OWNER_SURFACES = {"cli", "tui", "desktop", "local", "acp", "oneshot"}
 TOOL_NAMES = ("lastprice_items", "lastprice_offer", "lastprice_extra")
 # Hermes's tool-search bridge. tool_search / tool_describe are catalog reads scoped to the session's
 # toolsets; a tool_call that resolves is unwrapped BEFORE pre_tool_call, so the hook sees the real tool

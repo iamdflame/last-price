@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from . import audit, report
-from .runtime import LOCAL_SURFACES, Runtime
+from .runtime import OWNER_SURFACES, Runtime
 from .state import commitment
 
 USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
@@ -77,7 +77,7 @@ def parse_sell(rest: list[str]) -> dict:
 
 
 def is_owner(rt: Runtime, platform: str, source: Any) -> bool:
-    if (platform or "").lower() in LOCAL_SURFACES:
+    if (platform or "").lower() in OWNER_SURFACES:
         return True
     user_id = getattr(source, "user_id", None) if source is not None else None
     return bool(user_id) and f"{platform.lower()}:{user_id}" in rt.store.owners()
@@ -96,7 +96,7 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
     if not parts:
         return USAGE
     cmd, rest = parts[0].lower(), parts[1:]
-    local = (platform or "").lower() in LOCAL_SURFACES
+    local = (platform or "").lower() in OWNER_SURFACES
     try:
         if cmd == "sell":
             f = parse_sell(rest)
