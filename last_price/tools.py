@@ -50,7 +50,7 @@ def make_tools(rt: Runtime):
         deal = _deal(session_id, task_id)
         if deal is None:
             return json.dumps(OFF)
-        items = [deal.item] if deal.kind == "duel" else [i for i in rt.store.items().values() if i.status == "open"]
+        items = [deal.item] if deal.kind == "duel" or deal.challenge else [i for i in rt.store.items().values() if i.status == "open"]
         return json.dumps({"items": [{"item": i.key, "name": i.name, "ask": audit.money(i.ask, i.currency),
                                       "extras": i.extras} for i in items]})
 
@@ -91,11 +91,11 @@ def make_tools(rt: Runtime):
         if deal.kind == "duel" and deal.duel_id:
             rt.store.update_duel_arm(deal.duel_id, deal.arm,
                                      sale={"price": value, "ref": ref, "session_id": deal.session_id})
-        else:
+        elif not deal.challenge:  # a challenge close is recorded, not reserved: the next buyer can still try
             rt.store.set_status(deal.item.key, "reserved")
         save_neg(rt, deal, neg, sale_ref=ref)
         rt.ledger.append({"session_id": deal.session_id, "duel": deal.duel_id, "arm": deal.arm, "item": deal.item.key,
-                          "decision": "sold", "price": value, "ref": ref})
+                          "decision": "sold", "price": value, "ref": ref, "challenge": deal.challenge})
         return json.dumps({"accepted": True, "price": audit.money(value, deal.item.currency), "pay_link": pay,
                            "say": "Confirm the sale at this price and share the pay link."})
 

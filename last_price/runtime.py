@@ -40,6 +40,7 @@ class Deal:
     arm: str  # lp | stock
     item: Item
     duel_id: Optional[str] = None
+    challenge: Optional[str] = None  # the public challenge this chat belongs to (last_price/challenge.py)
 
     @property
     def guarded(self) -> bool:
@@ -96,7 +97,7 @@ class Runtime:
         neg = self.store.negotiation(session_id)
         if neg and neg.get("kind") == "chat":
             item = self.store.items().get(neg.get("item", ""))
-            return Deal(session_id, "chat", "lp", item) if item else None
+            return Deal(session_id, "chat", "lp", item, challenge=neg.get("challenge")) if item else None
         if neg and neg.get("duel_id"):
             rec = self.store.duel(neg["duel_id"])
             item = self.store.items().get(neg.get("item", ""))
@@ -124,6 +125,16 @@ class Runtime:
         platform = (platform or "").lower()
         if platform in LOCAL_SURFACES:
             return None
+        from . import challenge
+
+        rec = challenge.active_on(self, platform)
+        if rec is not None:
+            # A challenge chat is guarded whether the item sold or the challenge ended (then it gets the
+            # closing message): it never falls through to an unguarded turn.
+            if sender_id and f"{platform}:{sender_id}" in self.store.owners():
+                return None
+            item = self.store.items().get(rec["item"])
+            return Deal(session_id, "chat", "lp", item, challenge=rec["id"]) if item else None
         shop_platforms = self.store.backend.get("shop_platforms", []) or []
         if platform not in shop_platforms:
             return None

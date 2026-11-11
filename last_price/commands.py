@@ -14,7 +14,7 @@ import shlex
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from . import audit, report
+from . import audit, challenge, report
 from .runtime import OWNER_SURFACES, Runtime
 from .state import commitment
 
@@ -26,7 +26,9 @@ USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
   bench [--duels N] [--budgets LO-HI] [--parallel P]   many duels, both sellers (terminal only)
   report [--duel ID] [--last N]   each deal turn: the draft beside what was sent
   reveal <item>            the floor and salt, checked against the commitment (local only)
-  owner add <platform>:<user_id> | shop on|off <platform> | doctor"""
+  owner add <platform>:<user_id> | shop on|off <platform> | doctor
+  challenge start <item> | challenge board [--out docs/challenge/board.md] | challenge end   (terminal only)
+                           a public "buy it below my floor" challenge on Telegram"""
 
 DISCLOSURE = [
     "What leaves this machine:",
@@ -153,6 +155,10 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
                     f"  commitment at listing = {it.commit}\n  match: {'yes' if ok else 'NO'}")
         if cmd == "doctor":
             return doctor(rt)
+        if cmd == "challenge":
+            if not local:
+                return "Run the challenge from a terminal: hermes lastprice challenge start <item>"
+            return challenge.run(rt, rest)
         if cmd == "duel":
             if not local or duel_runner is None:
                 return "Duels run in a terminal: hermes lastprice duel --vs-prompt \"<instruction>\""
@@ -248,5 +254,9 @@ def doctor(rt: Runtime) -> str:
     lines.append("  hosts contacted: " + "; ".join(hosts) + ". Nothing else: no telemetry, no payment provider.")
     lines.append(f"  owners: {', '.join(rt.store.owners()) or 'local terminal only'}")
     lines.append(f"  shop platforms: {', '.join(rt.store.backend.get('shop_platforms', []) or []) or 'none (duels only)'}")
+    rec = challenge.current(rt)
+    if rec:
+        lines.append(f"  challenge: {rec['id']} on {rec['platform']} ({'ended' if rec.get('ended') else 'LIVE'}), item "
+                     f"{rec['item']}; `hermes lastprice challenge board` writes the public board")
     lines.extend("  " + d for d in DISCLOSURE)
     return "\n".join(lines)
