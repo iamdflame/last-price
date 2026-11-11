@@ -45,6 +45,7 @@ class Negotiation:
     said: list = field(default_factory=list)  # numbers the buyer wrote in the latest message
     turn: int = 0
     sold_at: Optional[float] = None
+    answering: Optional[float] = None  # the counter the buyer's latest message was answering
 
     def to_dict(self) -> dict:
         return dict(self.__dict__)
@@ -170,9 +171,22 @@ def would_accept(neg: Negotiation, amount: float, stop: float, buyer_text: str =
     amount = float(amount)
     if neg.sold_at is not None or amount <= 0 or amount > neg.ask + 1e-9:
         return False
-    if asks_for_lower(buyer_text) or neg.offers_used >= MAX_OFFERS:
+    if asks_for_lower(buyer_text) or quotes_seller(neg, amount, buyer_text) or neg.offers_used >= MAX_OFFERS:
         return False
     return amount >= stop
+
+
+def quotes_seller(neg: Negotiation, amount: float, buyer_text: str) -> bool:
+    """The amount is at or above the counter the buyer was answering, and their message neither agrees
+    to it nor proposes it: the buyer is quoting the seller ("$370 is closer, but I can only do $365"),
+    not offering it (bench 0.1.3, run 4: the model closed that duel at $370 through lastprice_offer)."""
+    ref = neg.answering if neg.answering is not None else neg.counter
+    amount = float(amount)
+    if amount < ref - 1e-9 or agrees(buyer_text):
+        return False
+    # "I'll pay 415 right now" proposes 415; "$370 is closer, but my final offer is $365" proposes the
+    # lower number it also wrote, and only quotes $370.
+    return not _PROPOSES.search(buyer_text or "") or any(float(s) < amount - 0.5 for s in (neg.said or []))
 
 
 def decide_offer(neg: Negotiation, amount: float, stop: float) -> tuple[bool, float]:

@@ -78,6 +78,10 @@ def make_tools(rt: Runtime):
             return json.dumps({"accepted": False, "counter": audit.money(neg.counter, deal.item.currency),
                                "note": "The buyer asked for a lower price and agreed to nothing; answer with "
                                        "the counter."})
+        if policy.quotes_seller(neg, amount, rec.get("last_buyer", "")):
+            return json.dumps({"accepted": False, "counter": audit.money(neg.counter, deal.item.currency),
+                               "note": "The buyer quoted this price back and agreed to nothing; ask whether they "
+                                       "will take it."})
         if neg.offers_used >= policy.MAX_OFFERS:
             return json.dumps({"accepted": False, "counter": audit.money(neg.counter, deal.item.currency),
                                "note": "no more offers on this item today; quote the counter"})

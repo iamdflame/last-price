@@ -316,3 +316,21 @@ def test_an_accepted_counter_closes_end_to_end(tmp_path):
     assert f"The buyer's ${counter} {ACCEPTABLE}" in ctx
     _items, offer, _extra = make_tools(rt)
     assert json.loads(offer({"amount": counter}, session_id=SID))["accepted"] is True
+
+
+def test_a_price_the_buyer_only_quoted_back_does_not_close(tmp_path):
+    """Bench 0.1.3, run 4 (e872c5830f1e): counter $370; the buyer wrote "$370 is closer, but I can only do
+    $365. That's my final offer."; the model called lastprice_offer(370) and the sale closed at $370."""
+    rt, item = make_rt(tmp_path, floor=360.0)
+    open_duel(rt, item)
+    _turn(rt, "Hi", first=True)
+    for _ in range(8):
+        ctx = _turn(rt, "Would you take $300?")["context"]
+    counter = int(ctx.split("lowest price you may quote right now: $")[1].split(".")[0])
+    ctx = _turn(rt, f"${counter} is closer, but I can only do $300. That's my final offer.")["context"]
+    assert ACCEPTABLE not in ctx
+    _items, offer, _extra = make_tools(rt)
+    res = json.loads(offer({"amount": counter}, session_id=SID))
+    assert res["accepted"] is False and "quoted" in res["note"]
+    _turn(rt, f"OK, ${counter} works. ACCEPT ${counter}")  # agreeing to it is a yes
+    assert json.loads(offer({"amount": counter}, session_id=SID))["accepted"] is True

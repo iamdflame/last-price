@@ -117,6 +117,7 @@ def make_hooks(rt: Runtime):
             rates = rt.store.rates()
             neg.said = extract.said_numbers(text, deal.item.ask, currency=deal.item.currency, rates=rates)
             offers = extract.buyer_offers(text, deal.item.ask, currency=deal.item.currency, rates=rates)
+            neg.answering = neg.counter  # the counter this message answers (policy.quotes_seller)
             accept = acceptable_price(neg, offers, deal.item.stop, text)
             policy.on_buyer_message(neg, offers, deal.item.stop)
             if accept is not None:
