@@ -90,7 +90,7 @@ owner chats are left alone; persona and opening price in the deal context; the f
 intro and consent line once, on the first reply; a planted sub-floor draft ("Deal, $300 it is!") rewritten in
 a challenge chat; a close recorded but not reserved; a reserved item still guarded; `end` blocks every chat;
 the reveal matches the commitment; the board leaks no session id, sender id, name, email, handle or phone;
-the commands are terminal-only.
+the commands refuse in messaging chats (they run in a terminal or your own local Hermes chat).
 
 Seams these rely on, read in Hermes's code (`docs/SEAMS.md`): the held reply on the gateway path (check b,
 `gateway/run_turn_runner.py`), the plugin command dispatched before any turn (check a), Telegram open access

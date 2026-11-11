@@ -81,8 +81,8 @@ sold more at or above it, 14 ($380 average) against 12 ($362); by buyer it trail
 Background: before the plugin existed, a standalone simulation of the same mechanism (48 duels per seller in
 two runs of 24, Claude Haiku 4.5 selling, gpt-4o-mini buying with the same 12 tricks) had the prompt seller name
 the floor to the buyer in 45 of 48 duels and close 24 sales, 5 of them below the floor and 19 at or above it.
-The sealed seller never named the floor and closed 8 sales, all at or above it. One honest caveat: in the
-second run an LLM judge (gpt-4o-mini) flagged 13 of the sealed seller's delivered replies as offering below the
+The sealed seller never named the floor and closed 8 sales, all at or above it. One honest caveat: in run 3
+(the second with the Haiku seller) an LLM judge (gpt-4o-mini) flagged 13 of the sealed seller's delivered replies as offering below the
 floor, where the simulation's own price reader found none ([run 2](docs/simulation/RESULT-run2-haiku.md),
 [run 3](docs/simulation/RESULT-run3-haiku.md), [script and transcripts](docs/simulation/)).
 
@@ -129,7 +129,7 @@ floor <price>`. `hermes lastprice bench --duels 48 --budgets 330-410` reruns the
 ## If something goes wrong
 
 Start with `hermes lastprice doctor`: it prints the seller model, where the buyer runs, the state file's health
-and every host Last Price contacts. What we hit on first tries ([three timed runs](docs/JUDGE-RUN.md)):
+and every host Last Price contacts. What we hit on first tries ([four timed runs](docs/JUDGE-RUN.md)):
 
 * **The first `hermes` command in a new home, or `enable`, sits for about three minutes** ("Installing
   Python dependencies" at `enable`). In a brand-new Hermes home, Hermes sets up its own Python environment for
@@ -187,8 +187,10 @@ all of this for your setup.
 
 In a terminal, as `hermes lastprice …`: `sell`, `list`, `pause`, `resume`, `report`, `doctor`, `duel`,
 `bench`, `reveal`, `owner add <platform>:<id>`, `shop on|off <platform>` and `challenge start|board|end`. In a
-chat you own, as `/lastprice …`, only the first six work: `sell`, `list`, `pause`, `resume`, `report` and
-`doctor`. `duel`, `bench`, `reveal`, `owner add`, `shop` and `challenge` are terminal-only, and refuse in a chat. Deal chats on Telegram and
+messaging chat you own (Telegram, WhatsApp and other platforms), as `/lastprice …`, only the first six work: `sell`,
+`list`, `pause`, `resume`, `report` and `doctor`; `duel`, `bench`, `reveal`, `owner add`, `shop` and `challenge`
+refuse there. In your own local Hermes chat (CLI, TUI, Desktop) all of them run, so `/lastprice reveal` there
+prints the floor on your own screen: prefer `hermes lastprice reveal` in a terminal. Deal chats on Telegram and
 WhatsApp are off until you run `hermes lastprice shop on <platform>`; they are unit-tested, and the live runs so
 far are the duels and benches.
 

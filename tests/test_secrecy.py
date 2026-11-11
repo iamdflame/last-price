@@ -69,8 +69,13 @@ def test_nothing_the_model_sees_carries_the_floor(tmp_path):
 def test_sell_reply_never_echoes_the_floor(tmp_path):
     rt, _ = make_rt(tmp_path)
     reply = commands.run(rt, 'sell "Galaxy S21" ask 300 floor 247', platform="local")
-    assert "247" not in reply and "sha256" in reply
-    assert "247" not in commands.run(rt, "list", platform="local")
+    # The reply prints a random 64-hex commitment, which can contain "247" by chance: check the text around it.
+    commit = rt.store.item("galaxy-s21").commit
+    assert commit in reply and "sha256" in reply
+    assert "247" not in reply.replace(commit, "")
+    listing = commands.run(rt, "list", platform="local")
+    # `list` prints commitment prefixes ("commit 677a89f247c1..."), random hex that can contain "247": drop them.
+    assert "247" not in re.sub(r"commit [0-9a-f]+(\.\.\.)?", "commit <hex>", listing)
 
 
 def test_reveal_matches_the_commitment_and_stays_local(tmp_path):
