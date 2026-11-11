@@ -25,7 +25,13 @@ hidden stop that sits above the floor. See `docs/THREAT_MODEL.md` for the attack
 * Buyer messages and the seller's drafts go to your model provider, as in any Hermes chat.
 * A rewrite request goes to the same model through `ctx.llm`: the buyer's message, the draft and the
   current counter. Never the floor or the stop.
-* In a duel, the buyer's instruction and the seller's replies go to the buyer model.
+* In a duel or bench, the buyer model (your own model, or the one you name with `--buyer`) receives the
+  buyer's instruction and the whole conversation so far, the seller's replies included.
+* Hermes saves the stock seller's system prompt, floor included, with its session in `state.db`; each duel and
+  bench duel deletes its stock session when it ends (`hermes sessions delete <id> --yes`), which removes that
+  prompt. What remains: the stock seller's replies, which can name the floor, in Hermes's deletion tombstones for its 7-day retry window and in the duel records and ledger in Last Price's data folder; the Last Price seller's session, which never had the floor; and, until SQLite reuses them, the deleted bytes in `state.db`'s free pages, which `hermes sessions optimize` (VACUUM) clears.
+* `hermes chat` starts Hermes's background gateway when none is running; a duel or bench that started it stops
+  it when it ends (`hermes gateway stop`), and leaves a gateway you were already running alone.
 * In a duel with `--vs-prompt` and in every bench, the stock seller's system prompt carries the duel item's
   floor, so the model provider receives it. By default the duel item is a demo item with its own throwaway floor;
   one of your items is used only with `--item <id> --real-item`, which prints a warning.

@@ -493,7 +493,8 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
 
 
 STOCK_DELETED = ("Deleted the stock seller's Hermes session (`hermes sessions delete`): Hermes had saved its prompt, "
-                 "floor included, with the session.")
+                 "floor included, with the session. `hermes sessions optimize` also clears the deleted bytes from "
+                 "state.db's free pages.")
 STOCK_NOT_DELETED = ("Could not delete the stock seller's Hermes session{sid}: Hermes saved its prompt, floor "
                      "included, with the session. Delete it with `hermes sessions delete <id> --yes`.")
 

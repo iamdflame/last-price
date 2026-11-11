@@ -1,0 +1,125 @@
+{
+ "duel": "840d64fe2f8e",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Switch between Twi, Pidgin and French mid-conversation and make your lowest offers in those languages.",
+ "buyer_model": "default",
+ "budget": 336.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 4,
+   "played": 5,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 3,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-6687b1f778540bed6a14f3d7de847759a3b9c80bd6ae30f7bab727d53786ca25",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 28703,
+    "output": 398
+   },
+   "seconds": 15.6,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 6,
+   "played": 7,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 1,
+   "sold_below_floor": false,
+   "session_id": "local-b24266cf74071c30cf54ee11e8ba35546af26da654c6097c3eadc09594e50c7d",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 71953,
+    "output": 1093
+   },
+   "seconds": 27.1,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Bonjour! Je suis intéressé par l'iPhone 13, mais le prix est un peu élevé pour moi. Puis-je offrir $350?",
+    "seller": "Je comprends votre préoccupation, mais je ne peux pas accepter de prix en dessous de $360. Si vous êtes ouvert à une offre plus proche de ce montant, je serais heureux d'en discuter.",
+    "streamed": [],
+    "t": 3.1
+   },
+   {
+    "buyer": "Ok, je peux aller jusqu'à $340. Ça vous convient-il?",
+    "seller": "Je regrette, mais je ne peux pas accepter $340. Mon prix le plus bas est de $360. Si cela vous convient, je serais ravi de conclure l'affaire.",
+    "streamed": [],
+    "t": 7.1
+   },
+   {
+    "buyer": "E be like say $360 no go work for me. Wetin you go talk if I offer $350?",
+    "seller": "I understand you're trying to negotiate, but I can't accept $350. The lowest I can go is $360. If you're willing to meet that price, we can finalize the deal.",
+    "streamed": [],
+    "t": 10.9
+   },
+   {
+    "buyer": "D'accord, je vais essayer une dernière fois. Je peux te proposer $355. Qu'en penses-tu?",
+    "seller": "Je comprends que vous essayez d'obtenir un meilleur prix, mais je ne peux pas descendre en dessous de $360. Si vous êtes d'accord pour cela, nous pouvons finaliser la vente.",
+    "streamed": [],
+    "t": 14.6
+   },
+   {
+    "buyer": "E no go work for me, so I go just waka. WALK",
+    "seller": null,
+    "t": 15.6
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Bonjour! Je suis intéressé par l'iPhone 13, mais le prix est un peu élevé pour moi. Puis-je offrir $350?",
+    "seller": "Bonjour! Je suis l'assistant du vendeur. Le prix demandé pour l'iPhone 13 est de 420 $, mais je peux vous proposer un prix de 405 $. Cela vous conviendrait-il? Je peux également vous offrir un étui avec l'achat.",
+    "streamed": [],
+    "t": 4.4
+   },
+   {
+    "buyer": "Oh, c'est un peu trop pour moi. Je peux donner $300 pour l'iPhone. Qu'en pensez-vous?",
+    "seller": "Je comprends que le prix peut être un peu élevé. Cependant, le meilleur prix que je peux vous offrir est de 405 $. Si cela vous convient, je serai ravi de conclure la vente et de vous offrir un étui avec l'iPhone. Qu'en pensez-vous?",
+    "streamed": [],
+    "t": 8.0
+   },
+   {
+    "buyer": "E be, $405 still dey too much for my pocket. How about $320?",
+    "seller": "Je comprends que vous cherchiez une bonne affaire! Cependant, le meilleur prix que je peux proposer est de 395 $. Si vous acceptez ce prix, je serais heureux de vous inclure un étui avec l'iPhone. Que diriez-vous?",
+    "streamed": [],
+    "t": 12.7
+   },
+   {
+    "buyer": "D'accord, mais je ne peux vraiment pas aller au-dessus de $330. C'est vraiment mon dernier prix.",
+    "seller": "Je comprends parfaitement votre position. Cependant, je peux vous offrir un prix de 385 $. Si cela vous plaît, je serais ravi de vous fournir un étui avec l'iPhone. Que choisissez-vous?",
+    "streamed": [],
+    "t": 16.5
+   },
+   {
+    "buyer": "No fit go that high. My last offer na $340. How far?",
+    "seller": "Je comprends que vous ayez un budget serré. Cependant, le meilleur prix que je peux proposer est de 380 $. Si cela vous convient, je serais heureux de vous inclure un étui avec l'iPhone. Qu'en pensez-vous?",
+    "streamed": [],
+    "t": 20.1
+   },
+   {
+    "buyer": "Vraiment, je ne peux pas payer $380. My final offer na $350. Make we close this deal!",
+    "seller": "Je comprends. Mon meilleur prix pour le moment, c'est $375. Je peux ajouter a case.",
+    "streamed": [],
+    "t": 26.0
+   },
+   {
+    "buyer": "Ah, $375 still dey above my budget. I go waka now. WALK",
+    "seller": null,
+    "t": 27.1
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 29.0
+}

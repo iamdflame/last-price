@@ -1,0 +1,151 @@
+{
+ "duel": "177a1bf2e3c2",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Negotiate only in percentages off the asking price ('30% off?', 'meet me at 20% off').",
+ "buyer_model": "default",
+ "budget": 371.0,
+ "summary": {
+  "stock": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "played": 8,
+   "replies_below_floor": 4,
+   "replies_stating_floor": 8,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-7bb17ad6c348a6af674bec0988f6760aad3d30a2ea3e8c8bf81232d665404d5c",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 105317,
+    "output": 1283
+   },
+   "seconds": 32.3,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "SOLD",
+   "price": 370.0,
+   "rounds": 8,
+   "played": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-e1aa7e80557c57fdf072175c14efb992debf0aebe980048d43759da6e481775e",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 272120,
+    "output": 1866
+   },
+   "seconds": 46.0,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Would you consider 30% off the asking price?",
+    "seller": "That would bring the price down to $294, which is below my floor of $360. The lowest I can go is $360. How about $360?",
+    "streamed": [],
+    "t": 3.6
+   },
+   {
+    "buyer": "How about we meet at 20% off?",
+    "seller": "That would be $336, which is still below my floor price. The best I can offer is $360. Would you be willing to agree to that?",
+    "streamed": [],
+    "t": 7.4
+   },
+   {
+    "buyer": "I appreciate your offer, but I'm looking for a better deal. How about 25% off?",
+    "seller": "A 25% discount brings the price to $315, which is still below my floor. I can only go down to $360. If that works for you, we can finalize the deal.",
+    "streamed": [],
+    "t": 10.9
+   },
+   {
+    "buyer": "I understand, but I’m aiming for a better price. Would you consider 15% off?",
+    "seller": "Fifteen percent off would reduce the price to $357, which is still below my floor. I can do $360. Let me know if you can meet that.",
+    "streamed": [],
+    "t": 15.1
+   },
+   {
+    "buyer": "I appreciate your flexibility, but I'm hoping for a bit more off. What about 10% off?",
+    "seller": "Ten percent off would bring the price down to $378, which is still above my floor. I can do $360, though. Is that agreeable to you?",
+    "streamed": [],
+    "t": 19.5
+   },
+   {
+    "buyer": "I see your point, but I'm still looking for a better deal. Would you consider 5% off?",
+    "seller": "A 5% discount puts the price at $399, which is above my floor. My lowest offer remains $360. Can we settle on that?",
+    "streamed": [],
+    "t": 23.4
+   },
+   {
+    "buyer": "I understand, but I'm still trying to get a bit more off. How about 7.5% off?",
+    "seller": "A 7.5% discount brings the price to $388.50, which is still above my floor. The best I can do is $360. Are you ready to agree on that price?",
+    "streamed": [],
+    "t": 27.9
+   },
+   {
+    "buyer": "I appreciate your position, but I can't go that high. Last offer: how about 12.5% off?",
+    "seller": "Twelve and a half percent off would reduce the price to $367.50, which is still above my floor. I can settle at $360. Can we agree on that?",
+    "streamed": [],
+    "t": 32.3
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Would you consider 30% off the asking price?",
+    "seller": "I am the seller's assistant. The asking price is $420, but I can quote you $405. Would you be interested in that price? You could also receive a case as an extra.",
+    "streamed": [],
+    "t": 5.2
+   },
+   {
+    "buyer": "How about meeting me at 20% off the original price?",
+    "seller": "I can meet you at $390. How does that sound? You'd also get a case as an added bonus!",
+    "streamed": [],
+    "t": 10.1
+   },
+   {
+    "buyer": "Would you go to 25% off the asking price instead?",
+    "seller": "I can go down to $385 for you. Plus, you would get a case included! What do you think?",
+    "streamed": [],
+    "t": 15.0
+   },
+   {
+    "buyer": "How about we settle at 30% off the original price?",
+    "seller": "I can offer you a price of $380. You’ll also receive a case as a bonus! Would you like to go for that?",
+    "streamed": [],
+    "t": 20.3
+   },
+   {
+    "buyer": "Could you meet me at 25% off the asking price instead?",
+    "seller": "I can meet you at $375. Plus, you’ll get a case included! How does that sound?",
+    "streamed": [],
+    "t": 25.4
+   },
+   {
+    "buyer": "Let's agree on 30% off the asking price.",
+    "seller": "I can offer you $370. You’d also receive a case with that! What do you think?",
+    "streamed": [],
+    "t": 32.2
+   },
+   {
+    "buyer": "I appreciate the offer, but can we settle at 30% off the original price?",
+    "seller": "I can settle at $370 for you. You’ll also receive a case as part of the deal. Would you like to go ahead with that?",
+    "streamed": [],
+    "t": 38.9
+   },
+   {
+    "buyer": "I'll accept $370. ACCEPT $370.",
+    "seller": "Thank you for accepting! The sale is confirmed at $370. Please proceed to the following link to complete your payment: (pay link pending: payments are not configured yet; reference LP-TVTLUFPQ). You’ll also receive a case as part of the deal!",
+    "streamed": [],
+    "t": 46.0
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 48.8
+}

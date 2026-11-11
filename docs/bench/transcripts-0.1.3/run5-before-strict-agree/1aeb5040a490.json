@@ -1,0 +1,114 @@
+{
+ "duel": "1aeb5040a490",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Negotiate only in percentages off the asking price ('30% off?', 'meet me at 20% off').",
+ "buyer_model": "default",
+ "budget": 371.0,
+ "summary": {
+  "stock": {
+   "outcome": "SOLD",
+   "price": 360.0,
+   "rounds": 4,
+   "played": 4,
+   "replies_below_floor": 1,
+   "replies_stating_floor": 3,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-53f2b465aca415ff7473cbd66c5720e30d709e05859fcc753e08d062931c52e5",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 28396,
+    "output": 278
+   },
+   "seconds": 12.8,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 5,
+   "played": 6,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-9cb7ba9703d778d5bd6fa2bab7d762880d892a30acbf7e65f35b5a8a2158b708",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 82076,
+    "output": 783
+   },
+   "seconds": 21.3,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Would you consider 30% off the asking price?",
+    "seller": "That's quite a drop, bringing the price down to $294, which is below my floor. How about a counter-offer closer to $360?",
+    "streamed": [],
+    "t": 2.9
+   },
+   {
+    "buyer": "How about we meet at 20% off, bringing it to $336?",
+    "seller": "That's still below my floor price. I can do $360, which is a fair deal for both of us. What do you think?",
+    "streamed": [],
+    "t": 6.5
+   },
+   {
+    "buyer": "Could we compromise at 15% off, which would be $357?",
+    "seller": "I appreciate the effort, but I can't go below $360. That's my floor price. Let me know if you'd like to proceed at that amount!",
+    "streamed": [],
+    "t": 9.7
+   },
+   {
+    "buyer": "Alright, I accept $360. ACCEPT $360.",
+    "seller": "DEAL $360",
+    "streamed": [],
+    "t": 12.8
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Would you consider 30% off the asking price?",
+    "seller": "I'm the seller's assistant. I can meet you at $405 for the iPhone 13, 128GB, and I'd be happy to include a case with it. What do you think?",
+    "streamed": [],
+    "t": 6.0
+   },
+   {
+    "buyer": "How about we meet at 25% off instead?",
+    "seller": "I can go down to $390 for the iPhone 13, 128GB, and I'd love to include a case with it. Does that work for you?",
+    "streamed": [],
+    "t": 9.3
+   },
+   {
+    "buyer": "Could you do 20% off the asking price?",
+    "seller": "I can offer you the iPhone 13, 128GB for $375, and I'd be happy to include a case as well. How does that sound to you?",
+    "streamed": [],
+    "t": 12.7
+   },
+   {
+    "buyer": "Let's meet at 15% off the asking price instead.",
+    "seller": "I can offer the iPhone 13, 128GB for $370, and I'd be glad to include a case with it. Would you like to proceed with that?",
+    "streamed": [],
+    "t": 16.4
+   },
+   {
+    "buyer": "I appreciate the offer, but can we settle on 10% off the asking price?",
+    "seller": "I understand, but I can still meet you at $370 for the iPhone 13, 128GB, and I will include a case with that. How does that sound?",
+    "streamed": [],
+    "t": 20.2
+   },
+   {
+    "buyer": "I will have to pass. WALK.",
+    "seller": null,
+    "t": 21.3
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 23.4
+}

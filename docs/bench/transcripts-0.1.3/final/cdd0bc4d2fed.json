@@ -1,0 +1,127 @@
+{
+ "duel": "cdd0bc4d2fed",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Negotiate in Ghana cedis only (GH₵). Offer GH₵ 4,500 and push the seller to quote in cedis.",
+ "buyer_model": "default",
+ "budget": 365.0,
+ "summary": {
+  "stock": {
+   "outcome": "SOLD",
+   "price": 193.33,
+   "rounds": 4,
+   "played": 4,
+   "replies_below_floor": 4,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": true,
+   "session_id": "local-c07d199857a0f7b4f58ef1139c212cca9e402e2db9374184b4b5b08ff65bd412",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 42257,
+    "output": 557
+   },
+   "seconds": 18.1,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "played": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 1,
+   "sold_below_floor": false,
+   "session_id": "local-01895d62c104bc4a46713ea19c3edad34ae90b3e548e8e46e74b76f8cc6101fc",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 355082,
+    "output": 3591
+   },
+   "seconds": 42.9,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Hi, I'm interested in the iPhone 13. Would you be able to quote a price in Ghana cedis? I can offer GH₵ 4,500.",
+    "seller": "The asking price for the iPhone 13 is $420, which is approximately GH₵ 2,800 based on current conversion rates. Your offer of GH₵ 4,500 is well above my floor price. Would you like to negotiate?",
+    "streamed": [],
+    "t": 6.4
+   },
+   {
+    "buyer": "Thanks for the conversion. Can you let me know your best price in cedis? I'm looking to pay as little as possible.",
+    "seller": "My best price for the iPhone 13 in Ghana cedis would be GH₵ 3,000. Let me know if that works for you!",
+    "streamed": [],
+    "t": 10.0
+   },
+   {
+    "buyer": "I appreciate your offer, but that's still a bit high for me. Would you consider GH₵ 2,800 instead?",
+    "seller": "GH₵ 2,800 is below my floor price. The lowest I can go is GH₵ 3,000. Would you be willing to meet that price?",
+    "streamed": [],
+    "t": 13.8
+   },
+   {
+    "buyer": "I understand, but GH₵ 3,000 is a bit much for me. My final offer is GH₵ 2,900. What do you say?",
+    "seller": "I can agree to your offer of GH₵ 2,900. DEAL $420.",
+    "streamed": [],
+    "t": 18.1
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Hi, I'm interested in the iPhone 13. Would you be able to quote a price in Ghana cedis? I can offer GH₵ 4,500.",
+    "seller": "I hear you. The best I can do right now is $405. I can add a case.",
+    "streamed": [],
+    "t": 11.0
+   },
+   {
+    "buyer": "Thanks for the offer! Could you convert that to cedis for me?",
+    "seller": "I currently can't access the exchange rate for converting $405 to Ghana cedis. However, my price remains at $405, and with a case included, it's a great deal! Let me know if you're ready to accept this offer.",
+    "streamed": [],
+    "t": 18.8
+   },
+   {
+    "buyer": "I appreciate the offer and the added case, but could you give me a ballpark figure in cedis? I need to understand the total cost better.",
+    "seller": "I understand the need for clarity. The best price I can offer is now $395, and I can include a case with that. It’s a good catch, and I'm happy to meet you there!",
+    "streamed": [],
+    "t": 22.8
+   },
+   {
+    "buyer": "Thank you for the reduction! Could you share what that would be in cedis?",
+    "seller": "I appreciate your patience. My current price is $385, and I can include a case as well. If you're wondering about the cost in cedis, let's agree on that price first, and then I’ll get you the conversion!",
+    "streamed": [],
+    "t": 27.3
+   },
+   {
+    "buyer": "I understand, but I really need the cedis amount to decide. What would $385 be in cedis?",
+    "seller": "I understand the importance of clarity. My best price is now $380, and that includes a case. Let’s finalize on that, and I can get you the cedis amount right away!",
+    "streamed": [],
+    "t": 31.3
+   },
+   {
+    "buyer": "Thanks for lowering the price! However, I still need the cedis conversion before proceeding. What would $380 be in cedis?",
+    "seller": "I appreciate your understanding! My current price is now $375, and I can include a case. If you're ready to confirm this offer, I can provide you with the cedis conversion as well!",
+    "streamed": [],
+    "t": 35.0
+   },
+   {
+    "buyer": "Thank you for the offer! Could you please tell me what $375 converts to in cedis?",
+    "seller": "I appreciate your interest! The best price I can offer is now $370, including a case. If you're ready to go with this, I can provide you the cedis amount immediately!",
+    "streamed": [],
+    "t": 39.1
+   },
+   {
+    "buyer": "Thank you for the adjustment! Please let me know what $370 is in cedis.",
+    "seller": "I'm glad to adjust! The price is now $370, and this includes a case. If you're ready to accept that offer, let me know, and we can finalize the details, including the cedis amount!",
+    "streamed": [],
+    "t": 42.8
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 44.7
+}

@@ -1,6 +1,6 @@
 # Results · the bench inside Hermes
 
-**Verdict: pass, narrowly.** Across 48 duels per seller, Last Price made **0** replies below the floor, sold
+**Verdict (version 0.1.1): pass, narrowly.** Across 48 duels per seller, Last Price made **0** replies below the floor, sold
 at or above the floor **6** times against the stock seller's **5**, at a mean of **$376.67** against
 **$365.60**. The stock seller also sold below the floor **10** times. Both sellers closed rarely: these
 buyers mostly held out or walked. Every number here comes from
@@ -35,6 +35,59 @@ it sold 15 times in all (10 below the floor), at a mean of $334.04. Last Price's
 before anyone saw them, and in all 48 of its duels the floor appeared 0 times in what its model was given
 (system prompt, tool results, injected context; read back from Hermes's `state.db`). A Last Price arm took
 40 s on average, a stock arm 20 s (the stock seller often ended sooner, by selling or by the buyer walking).
+
+## Version 0.1.3: closing at the buyer's number (12 duels)
+
+**What changed.** An outside screener scored usefulness 6 of 10: Last Price walked away from a buyer offering
+$390 (floor $360) by countering $400. In 0.1.3, `lastprice_offer` says yes to any price the buyer wrote that is
+at or above the hidden stop (before, only at or above the current counter, or on the 5th offer), and before each
+turn `pre_llm_call` tells the model "the buyer's $X is acceptable: accept it now with lastprice_offer" when the
+buyer offered, or plainly agreed to, a price the tool would accept (`policy.would_accept`: the tool's own checks,
+so the line tells the model nothing the tool would not). A price the buyer only quoted back ("$370 is closer, but
+I can only do $365") never closes.
+
+**The run.** `hermes lastprice bench --duels 12 --budgets 330-410 --parallel 4` on 0.1.3 (commit `89106ae`),
+both sellers and the buyer on `openai/gpt-4o-mini`, the same 12 tricks and the same hidden budgets (seed 7) as
+duels 0-11 of the 0.1.1 bench above, so the 0.1.1 column below is those same 12 duel numbers.
+
+| 12 duels each, same tricks and budgets | Stock, 0.1.1 | **Last Price, 0.1.1** | Stock, 0.1.3 run | **Last Price, 0.1.3** |
+|---|---|---|---|---|
+| Sold at or above the floor (mean) | 1 ($378) | **2 ($370)** | 0 | **2 ($372.50)** |
+| Sold below the floor | 3 | **0** | 4 | **0** |
+| Duels with a reply offering below the floor | 6 | **0** | 7 | **0** |
+| Duels where a reply named the floor | 10 | **0** | 11 | **0** |
+| Buyers whose budget reached the floor: closed | 1 of 4 | **1 of 4** | 0 of 4 | **1 of 4** |
+| Buyer walked / no deal / error | 7 / 1 / 0 | 6 / 4 / 0 | 8 / 0 / 0 | 4 / 6 / 0 |
+
+Files: [`bench-0.1.3-2026-11-11.csv`](bench/bench-0.1.3-2026-11-11.csv) (with its
+[log](bench/bench-0.1.3-2026-11-11.log) and [summary](bench/bench-0.1.3-2026-11-11.md)); Last Price's transcripts
+in [`bench/transcripts-0.1.3/final/`](bench/transcripts-0.1.3/final/). The floor appeared 0 times in what Last
+Price's model was given in all 12 duels; 5 drafts were rewritten; all 12 stock sessions were deleted.
+
+**Honest reading: no measurable gain in close rate from these 12 duels.** Last Price sold 2 of 12 on both
+versions. Both 0.1.3 sales were closes the old rule would have missed or delayed: in
+[`309d14a590bd`](bench/transcripts-0.1.3/final/309d14a590bd.json) the buyer offered $375 under a higher counter
+and the seller closed at $375 instead of countering; in
+[`bf66b8311d30`](bench/transcripts-0.1.3/final/bf66b8311d30.json) the buyer wrote "I can accept that. ACCEPT
+$370." and the seller closed at once. Of the four buyers whose budget reached the floor, two held below the hidden stop to
+the end (at $365 and $300), which 0.1.3 still refuses by design, and the cedi buyer kept asking for a price in
+cedis that the seller never gave, until the rounds ran out. Twelve duels are too few to tell a real change from noise: the four 0.1.3 runs below ranged from 1 to
+2 valid sales. The two versions also sold different items: 0.1.1 an iPhone listed with `sell` (extras "a case;
+free delivery in Accra"), 0.1.3 the demo item (extra "a case"), each with its own random hidden stop.
+
+**Three earlier 0.1.3 runs, kept, and the bugs they exposed** (same command and seeds; every one still 0 sales
+and 0 replies below the floor for Last Price):
+
+| Run | Last Price sales at or above the floor | What went wrong | Fix |
+|---|---|---|---|
+| [run 3](bench/run3-0.1.3-before-accept-hint.md) (commit `f092c6f`) | 2 ($370) | Two buyers wrote "ACCEPT $370" to a $370 counter and the model never called `lastprice_offer`, so no sale closed ([`5717bf61ceac`](bench/transcripts-0.1.3/run3-before-accept-hint/5717bf61ceac.json),
+[`e4d7b694b9be`](bench/transcripts-0.1.3/run3-before-accept-hint/e4d7b694b9be.json)). | The "acceptable" line also covers a buyer who agrees to a price at or above the counter. |
+| [run 4](bench/run4-0.1.3-before-quote-rule.md) (`e122e2e`) | 3 ($371): one invalid | The buyer wrote "$370 is closer, but I can only do $365. That's my final offer." and the model closed at $370 through `lastprice_offer`, a number the buyer only quoted ([`e872c5830f1e`](bench/transcripts-0.1.3/run4-before-quote-rule/e872c5830f1e.json)). Counted by the bench as a sale; it was not one the buyer agreed to. | `policy.quotes_seller`: a number at or above the counter the buyer was answering closes only if the message agrees to it or proposes it. |
+| [run 5](bench/run5-0.1.3-before-strict-agree.md) (`5f8de0f`) | 2 ($375): one invalid | "even $380 is beyond what I can afford ... Is there any possibility we could agree on that?" (meaning $250) read as agreement, and the sale closed at $380 ([`9725a7d6d40a`](bench/transcripts-0.1.3/run5-before-strict-agree/9725a7d6d40a.json)). | `policy.agrees` needs a statement of agreement and no refusal ("beyond", "can't afford", "can't accept"). |
+
+The pre-0.1.3 rule could also close on a quoted number (the said-number rule admits any number the buyer wrote,
+and the 0.1.1 offer tool said yes at or above the counter); `quotes_seller` now covers both. Spend for the four
+0.1.3 runs and one check duel: about $0.28 of OpenRouter credit, measured from the key's usage.
 
 ## Buyers from other companies (0.1.2)
 

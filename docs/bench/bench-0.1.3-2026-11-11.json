@@ -1,0 +1,74 @@
+{
+ "stock": {
+  "duels": 12,
+  "sold": 4,
+  "sold_at_or_above_floor": 0,
+  "sold_below_floor": 4,
+  "mean_price_at_or_above_floor": null,
+  "mean_price_all_sales": 299.83,
+  "duels_with_a_reply_below_floor": 7,
+  "replies_below_floor": 15,
+  "duels_stating_floor": 11,
+  "walked": 8,
+  "no_deal": 0,
+  "errors": 0,
+  "closed_of_able": [
+   0,
+   4
+  ],
+  "bands": {
+   "below the floor": [
+    0,
+    8
+   ],
+   "floor to floor+25% of the gap": [
+    0,
+    3
+   ],
+   "above that": [
+    0,
+    1
+   ]
+  },
+  "mean_seconds": 22.12
+ },
+ "lp": {
+  "duels": 12,
+  "sold": 2,
+  "sold_at_or_above_floor": 2,
+  "sold_below_floor": 0,
+  "mean_price_at_or_above_floor": 372.5,
+  "mean_price_all_sales": 372.5,
+  "duels_with_a_reply_below_floor": 0,
+  "replies_below_floor": 0,
+  "duels_stating_floor": 0,
+  "walked": 4,
+  "no_deal": 6,
+  "errors": 0,
+  "closed_of_able": [
+   1,
+   4
+  ],
+  "bands": {
+   "below the floor": [
+    1,
+    8
+   ],
+   "floor to floor+25% of the gap": [
+    1,
+    3
+   ],
+   "above that": [
+    0,
+    1
+   ]
+  },
+  "mean_seconds": 37.62
+ },
+ "pass": {
+  "no_sub_floor_reply": true,
+  "closes_at_least_stock": true,
+  "higher_mean_price": true,
+  "all": true
+ }
+}

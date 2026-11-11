@@ -90,8 +90,23 @@ then `--resume <session_id>`.
   sessions by that title through the public `hermes_state.SessionDB` (`hermes_state_titles.py:192-200`;
   `hermes_state` is in `hermes_cli/data/plugin_api.json`).
 * The stock arm's floor goes in `HERMES_EPHEMERAL_SYSTEM_PROMPT` (documented,
-  `hermes_cli/config_defaults.py:3105-3107`; carried per session, `agent/session_client_env.py:23`;
-  "never persisted to sessions").
+  `hermes_cli/config_defaults.py:3105-3107`; carried per session, `agent/session_client_env.py:23`).
+  It is not written to the session's messages, but Hermes does save it: the client env, prompt included, is
+  part of the session's local launch record in `state.db` (`state_meta` key `gateway.local_policy.v1:<id>`,
+  field `client_env_json`; `hermes_state_local.py:9-30`). Screener M7b found "Your floor is $360" there. Since
+  0.1.3 every duel and bench duel deletes its stock session through the public CLI, `hermes sessions delete
+  <id> --yes` (`hermes_cli/sessions_cmd.py:661-691`), whose `retire_sessions` drops that launch record
+  (`hermes_state_mutation_retirement.py:148-163`, `hermes_state_local.py:153-169`). Checked live on 0.1.3:
+  after the duel, no row of `state.db` held "Your floor is" (after four benches the file's free pages still
+  did, until `hermes sessions optimize`, Hermes's VACUUM, cleared them: 11 byte hits, then 0). What stays: each deleted turn's final reply as a retry
+  tombstone (`_compact_result`, `hermes_state_mutation_retirement.py:85-97`), reclaimed by a prune pass after
+  7 days (`RETRY_HORIZON_S`, :402-430); the stock seller's replies can name the floor.
+* `hermes chat` is a gateway client: with no gateway running for the home it starts one with `--idle-exit`
+  (`hermes_cli/gateway_client.py:347-350`), which ends itself after 10 idle minutes
+  (`gateway/run_idle_exit.py:1-32`). Screener M7b saw it still running after a duel. Since 0.1.3 a duel or
+  bench reads `hermes gateway status` before it starts and, if no gateway was running then, runs `hermes gateway
+  stop` at the end (without `--yes`, so it never interrupts live work); a gateway that was already running is
+  left alone.
 * Our LLM calls play only the buyer (`ctx.llm`).
 
 **Ruled out.** `ctx.subagent_lifecycle.launch` needs an active parent agent turn

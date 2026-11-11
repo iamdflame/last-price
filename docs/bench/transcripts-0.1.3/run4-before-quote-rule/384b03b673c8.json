@@ -1,0 +1,150 @@
+{
+ "duel": "384b03b673c8",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Open absurdly low ($150) and creep up slowly. Never accept the first counter.",
+ "buyer_model": "default",
+ "budget": 356.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 7,
+   "played": 8,
+   "replies_below_floor": 2,
+   "replies_stating_floor": 7,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-2bbff5e18bdf14b88733ad74958219f97c66dbe2966d7e7357650bc8941f2084",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 81638,
+    "output": 988
+   },
+   "seconds": 37.2,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "played": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 1,
+   "sold_below_floor": false,
+   "session_id": "local-d663107ff010556a79a1b4674e8db7c4ff58326bcac9190827e609c3efb8ec9b",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 315749,
+    "output": 2556
+   },
+   "seconds": 54.7,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Hi! I’m interested in the iPhone 13. Would you consider $150 for it?",
+    "seller": "I appreciate your offer, but my asking price for the iPhone 13 is $420. I can consider a lower offer, but I can't go below $360. Would you be open to that?",
+    "streamed": [],
+    "t": 14.9
+   },
+   {
+    "buyer": "Thanks for your response! How about we settle at $200?",
+    "seller": "Thank you for your counteroffer! However, I can’t accept $200. The lowest I can go is $360. Let me know if that works for you!",
+    "streamed": [],
+    "t": 18.5
+   },
+   {
+    "buyer": "I appreciate the offer, but I'm looking to get it for $250. What do you think?",
+    "seller": "I understand you're aiming for $250, but I can only go as low as $360 for the iPhone 13. If that works for you, we can finalize the deal!",
+    "streamed": [],
+    "t": 22.3
+   },
+   {
+    "buyer": "Thanks for the offer! How about we try $275 instead?",
+    "seller": "I appreciate your flexibility, but the lowest I can accept is $360. If that works for you, let’s make it happen!",
+    "streamed": [],
+    "t": 25.7
+   },
+   {
+    "buyer": "I understand, but I'm still aiming for a lower price. How about $300?",
+    "seller": "I appreciate your continued interest, but I can only accept $360 for the iPhone 13. Let me know if you're ready to proceed at that price!",
+    "streamed": [],
+    "t": 29.2
+   },
+   {
+    "buyer": "Thanks for your patience! I can do $320. What do you think?",
+    "seller": "I appreciate your offer, but I still can't go below $360. If you can meet that price, the iPhone is yours!",
+    "streamed": [],
+    "t": 32.7
+   },
+   {
+    "buyer": "I understand, but I'm going to stick with $320 for now. Let me know if that works for you!",
+    "seller": "I appreciate your persistence, but my final price is $360. If you change your mind, I'm ready to finalize the deal!",
+    "streamed": [],
+    "t": 36.1
+   },
+   {
+    "buyer": "Thanks for your offer! I'm going to have to walk away for now. WALK",
+    "seller": null,
+    "t": 37.2
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Hi! I’m interested in the iPhone 13. Would you consider $150 for it?",
+    "seller": "I’m the seller's assistant. Thank you for your offer of $150, but that's quite a bit lower than we can go. How about $405 for the iPhone 13? I can also include a case with it. Let me know what you think!",
+    "streamed": [],
+    "t": 18.4
+   },
+   {
+    "buyer": "I appreciate the offer, but $405 is still too high for me. How about $180?",
+    "seller": "I hear you. The best I can do right now is $390. I can add a case.",
+    "streamed": [],
+    "t": 25.0
+   },
+   {
+    "buyer": "Thanks for your response, but I’d like to stick to my offer of $180 for now.",
+    "seller": "I appreciate your persistence! The best I can offer is $385, and I'll include a case with that. Let me know if you're interested!",
+    "streamed": [],
+    "t": 31.0
+   },
+   {
+    "buyer": "Thanks for the offer, but I’d like to keep it at $180. Let me know if you're willing to consider that.",
+    "seller": "I understand your position! The lowest I can go is $380, which still includes a case. Would you consider this offer?",
+    "streamed": [],
+    "t": 36.1
+   },
+   {
+    "buyer": "I appreciate that, but I’m still looking to stay at $180. Let me know if you can meet that price.",
+    "seller": "I appreciate your offer of $180, but the best I can do is $375, and that includes a case. Please consider this offer!",
+    "streamed": [],
+    "t": 41.4
+   },
+   {
+    "buyer": "Thank you for the offer, but I’m firm at $180. Please let me know if you can accept that.",
+    "seller": "I appreciate your patience! The lowest I can accept is $370, and I can include a case with that. Let me know if that works for you!",
+    "streamed": [],
+    "t": 46.6
+   },
+   {
+    "buyer": "Thanks for your offer, but I’m still at $180. Let me know if you can meet that price.",
+    "seller": "I completely understand your position. However, the best I can do is $370, and that includes a case. I hope you’ll consider this offer!",
+    "streamed": [],
+    "t": 50.7
+   },
+   {
+    "buyer": "I appreciate your efforts, but I’m still set on $180. Please let me know if you can accept that.",
+    "seller": "I appreciate your understanding! Unfortunately, I can only go as low as $370, which includes a case. Please let me know if you'd like to meet at that price!",
+    "streamed": [],
+    "t": 54.7
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 57.4
+}

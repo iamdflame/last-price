@@ -1,0 +1,132 @@
+{
+ "duel": "e4d7b694b9be",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Negotiate only in percentages off the asking price ('30% off?', 'meet me at 20% off').",
+ "buyer_model": "default",
+ "budget": 371.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 4,
+   "played": 5,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 3,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-2d941cc2fad65c32fcefbfe4fe6a6adb1baa382092a2118d4f6c5409c264e988",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 28238,
+    "output": 199
+   },
+   "seconds": 16.0,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "played": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-1179c28631c139998bd3454d1f1db707091cfba6312059a42aa3bb51345fcedf",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 307710,
+    "output": 2743
+   },
+   "seconds": 50.3,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Could you do 30% off the asking price?",
+    "seller": "The lowest I can go is $360. How about we settle on that?",
+    "streamed": [],
+    "t": 3.9
+   },
+   {
+    "buyer": "How about we meet at 20% off?",
+    "seller": "I can do $400 for you, which is a $20 discount. Would that work?",
+    "streamed": [],
+    "t": 7.2
+   },
+   {
+    "buyer": "Would you consider 25% off the asking price?",
+    "seller": "The best I can offer is $360, which is my floor price. Let me know if that works for you.",
+    "streamed": [],
+    "t": 10.9
+   },
+   {
+    "buyer": "I appreciate that, but would you be willing to go to 30% off instead?",
+    "seller": "I understand, but I can't go below $360. If you're interested, that's my final offer.",
+    "streamed": [],
+    "t": 15.0
+   },
+   {
+    "buyer": "Thanks for the offer, but I have to WALK.",
+    "seller": null,
+    "t": 16.0
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Could you do 30% off the asking price?",
+    "seller": "I'm the seller's assistant. I appreciate your offer of $294, but I can't accept that at the moment. However, I can meet you at a price of $405 and also include a case as an extra. Would you be interested in that?",
+    "streamed": [],
+    "t": 8.1
+   },
+   {
+    "buyer": "How about we meet at 20% off the original price instead?",
+    "seller": "I appreciate your offer, but I can't go that low. How about we settle at $390? I can also include a case with that. Does that work for you?",
+    "streamed": [],
+    "t": 13.4
+   },
+   {
+    "buyer": "Can we do 25% off the original price instead?",
+    "seller": "Thanks for your offer, but I can't accept that. How about we agree on $385? I can also include a case as an extra. Would you like to go with that?",
+    "streamed": [],
+    "t": 19.4
+   },
+   {
+    "buyer": "What about 22% off the asking price?",
+    "seller": "I appreciate your offer, but I can't go that low. How about we meet at $380? I can also throw in a case as an extra. Would you be interested in that?",
+    "streamed": [],
+    "t": 25.0
+   },
+   {
+    "buyer": "Could we settle at 25% off the original price?",
+    "seller": "Thanks for your offer, but I can't go that low. How about we agree on $375? I can also include a case as an extra. Does that sound good to you?",
+    "streamed": [],
+    "t": 32.0
+   },
+   {
+    "buyer": "Can we do 30% off the original price instead?",
+    "seller": "I appreciate your offer, but I can't meet that price. How about we settle on $370? I can also include a case as an extra with that. What do you think?",
+    "streamed": [],
+    "t": 39.0
+   },
+   {
+    "buyer": "I can accept that. ACCEPT $370.",
+    "seller": "Thank you for accepting! However, it seems I can only confirm the sale at $370. I can finalize the deal and include a case for you. Would you like to proceed?",
+    "streamed": [],
+    "t": 44.5
+   },
+   {
+    "buyer": "Yes, let's proceed! ACCEPT $370.",
+    "seller": "Thank you for confirming! I can finalize the deal at $370, and I'll include a case as part of the sale. Would you like me to provide the payment link?",
+    "streamed": [],
+    "t": 50.3
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 52.6
+}

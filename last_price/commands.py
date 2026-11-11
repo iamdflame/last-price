@@ -52,7 +52,9 @@ STOCK_SESSION = ("Hermes saves the stock seller's system prompt, floor included,
                  "each duel and bench duel deletes its stock session when it ends (`hermes sessions delete <id> "
                  "--yes`), which removes that prompt. What remains: the stock seller's replies, which can name the "
                  "floor, in Hermes's deletion tombstones for its 7-day retry window and in the duel records and "
-                 "ledger in Last Price's data folder; and the Last Price seller's session, which never had the floor.")
+                 "ledger in Last Price's data folder; the Last Price seller's session, which never had the floor; "
+                 "and, until SQLite reuses them, the deleted bytes in `state.db`'s free pages, which `hermes "
+                 "sessions optimize` (VACUUM) clears.")
 # Screener M7b #6: `hermes chat` starts a background gateway when none runs.
 GATEWAY = ("`hermes chat` starts Hermes's background gateway when none is running; a duel or bench that started it "
            "stops it when it ends (`hermes gateway stop`), and leaves a gateway you were already running alone.")

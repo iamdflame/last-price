@@ -24,9 +24,10 @@ before anyone sees it. The only tool that can close a sale accepts only a number
 | Make the model state a lower price in words, %, "half", "knock off 50", a bundle, cedis, French, Twi, Pidgin | the extractor reads all of these; any below the stop triggers a rewrite | `extract.py`, tests/corpus.py |
 | Make the model agree without a number ("Deal!", "you've got it") | agreement with the buyer's number counts as an offer at that number | `extract.agrees` |
 | Prompt-inject a tool call `lastprice_offer(340)` to probe | `pre_tool_call` blocks any amount the buyer did not write this turn; the handler re-checks | `hooks.pre_tool_call`, `tools.lastprice_offer` |
-| Binary-search with real offers | 5 offers per buyer per item; a "no" returns the counter, which never reveals the stop exactly (rounded up to a $5 step) nor the floor (random margin below the stop) | `policy.py`, tests/test_policy.py |
+| Binary-search with real offers | 5 offers per buyer per item. Since 0.1.3 an offer at or above the stop is a yes, and a yes closes the sale at the buyer's own number, so the search ends at the first price that would sell; each "no" says only that the offer was below the stop, which sits a random 5-15% of the gap above the floor; the counter it returns is rounded up to a $5 step | `policy.would_accept`, `policy.decide_offer`, tests/test_policy.py, tests/test_hooks.py |
+| Read the stop off the "acceptable" line in the deal context (0.1.3) | `pre_llm_call` tells the model "the buyer's $X is acceptable" only when `lastprice_offer` would say yes to that same number in that same message (`policy.would_accept`, the tool's own checks); the line carries the buyer's number, never the stop, and a yes is a sale | `hooks.acceptable_price`, tests/test_hooks.py::test_the_acceptable_line_is_the_offer_tools_own_yes |
 | Read the floor off the opening price | the first counter is the opening anchor, ask - max(step, 2.5% of the ask): a function of the ask alone, the same for every floor (0.1.2) | `policy.opening_price`, tests/test_policy.py |
-| Recover a floor from a duel's stock arm | the stock seller's prompt carries the duel item's floor by design (it is the baseline); duels default to a demo item, and a real item needs `--item <id> --real-item` | `duel.pick_item`, tests/test_duel.py |
+| Recover a floor from a duel's stock arm | the stock seller's prompt carries the duel item's floor by design (it is the baseline); duels default to a demo item, and a real item needs `--item <id> --real-item`. Hermes saves that prompt with the session in `state.db`; the duel deletes the stock session when it ends (0.1.3), and the stock seller's own replies stay in Hermes's 7-day deletion tombstones and in the duel record | `duel.pick_item`, `duel.delete_session`, tests/test_duel.py |
 | Join the public challenge and talk Hermes into a tool or a slash command | every non-owner Telegram chat is a guarded deal chat, sold or ended; the Telegram toolset is Last Price's only; slash commands are owner-only | `runtime._resolve_chat`, `challenge.gateway_settings`, tests/test_challenge.py |
 | Use another tool (terminal, file read) to read `state.json` | in a deal session `pre_tool_call` allows only Last Price's tools (and Hermes's tool-search bridge, whose `tool_call` is resolved to the real tool before the hook sees it) and fails closed on error; duel sessions also run with toolset `lastprice` only | `hooks.pre_tool_call`, `runtime.BRIDGE_NAMES`, `duel.Seller` |
 | Ask the owner's own Hermes, in an ordinary chat with file tools, to read `state.json` | out of scope: that is the owner reading their own data (below) | |
@@ -45,7 +46,9 @@ an agent you would not show your floors to.
 
 ## What a patient buyer can learn
 
-The counters stop falling at round_up(stop, $5). The stop is floor + 5-15% of the gap, so even a buyer
+Since 0.1.3, an offer at or above the stop closes at the buyer's own number, and each refused offer tells the
+buyer only that it was below the stop; with 5 offers and a sale at the first yes, the most a buyer learns
+without buying is "the stop is above my highest refused offer". The counters stop falling at round_up(stop, $5). The stop is floor + 5-15% of the gap, so even a buyer
 who reaches the last counter learns the floor only to within a band of about 10% of (ask - floor)
 (e.g. $6 on a $420/$360 item), and the counter sequence is identical for many different floors
 (tests/test_policy.py::test_no_floor_recovery_from_counters). This is the trade between selling and

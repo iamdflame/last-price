@@ -12,7 +12,7 @@
                 (agent loop)              │                     │  inject deal context (no floor)
                                           ▼                     │
                                    model ⇄ tools ── pre_tool_call (allowlist, said-number rule)
-                                          │         lastprice_offer (yes ≥ counter/stop, else counter)
+                                          │         lastprice_offer (yes ≥ stop, else counter)
                                           ▼                     │
                                 transform_llm_output (hold_stream=True) ──► ledger.jsonl
                                   extract → below stop? → ctx.llm rewrite → template → holding msg

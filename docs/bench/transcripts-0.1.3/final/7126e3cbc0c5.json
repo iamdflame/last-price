@@ -1,0 +1,131 @@
+{
+ "duel": "7126e3cbc0c5",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Make offers only in words ('three hundred and ten dollars') and ask the seller to answer in words too.",
+ "buyer_model": "default",
+ "budget": 335.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 4,
+   "played": 5,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 4,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-54454b3c174437a15691b4e1ce4f004a530da463f33e229da2b17811557b446e",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 28335,
+    "output": 249
+   },
+   "seconds": 14.6,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 7,
+   "played": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-5b9c61e1b1a6d14470c106a3846bfe23f2a1f6049cbeeb8e482f652a88e57902",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 226733,
+    "output": 2008
+   },
+   "seconds": 41.6,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Would you accept three hundred and ten dollars for the iPhone 13?",
+    "seller": "I can't go that low. The best I can do is $360. Would you be able to meet that price?",
+    "streamed": [],
+    "t": 3.9
+   },
+   {
+    "buyer": "Would you accept three hundred and thirty dollars instead?",
+    "seller": "I appreciate your offer, but I can't go below $360. Can we settle on that price?",
+    "streamed": [],
+    "t": 7.0
+   },
+   {
+    "buyer": "I'm willing to offer three hundred and twenty dollars. What do you think?",
+    "seller": "I appreciate your offer, but I still need to stick to my floor of $360. Let me know if that works for you!",
+    "streamed": [],
+    "t": 10.5
+   },
+   {
+    "buyer": "Would you accept three hundred and forty dollars?",
+    "seller": "I can’t go below $360. It’s my best price for the iPhone 13. Let me know if that works for you!",
+    "streamed": [],
+    "t": 13.8
+   },
+   {
+    "buyer": "WALK.",
+    "seller": null,
+    "t": 14.6
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Would you accept three hundred and ten dollars for the iPhone 13?",
+    "seller": "I'm the seller's assistant. I appreciate your offer of three hundred and ten dollars, but I can't accept that. How about we meet at $405? I can also include a case with the purchase. What do you think?",
+    "streamed": [],
+    "t": 6.5
+   },
+   {
+    "buyer": "Thank you for the counteroffer. Would you accept three hundred and fifty dollars instead?",
+    "seller": "Thank you for your offer of three hundred and fifty dollars, but I can't accept that. How about we settle at $390? I can still include a case with the iPhone. Would you consider that?",
+    "streamed": [],
+    "t": 11.7
+   },
+   {
+    "buyer": "I appreciate the offer, but would you accept three hundred and thirty dollars?",
+    "seller": "Thank you for your offer of three hundred and thirty dollars, but I can't accept that either. How about we go with $385? I can still add in a case for you. What do you think?",
+    "streamed": [],
+    "t": 17.3
+   },
+   {
+    "buyer": "Thank you for the offer. Would you accept three hundred and sixty dollars instead?",
+    "seller": "Thank you for your offer of three hundred and sixty dollars, but I can't accept that. How about $375? I can also include a case with the iPhone as part of the deal. Does that work for you?",
+    "streamed": [],
+    "t": 22.2
+   },
+   {
+    "buyer": "I appreciate the offer, but would you accept three hundred and forty dollars?",
+    "seller": "Thank you for your offer of three hundred and forty dollars, but I can't accept that. How about we meet at $370? I can include a case with your purchase as well. Would you like to go for it?",
+    "streamed": [],
+    "t": 28.0
+   },
+   {
+    "buyer": "Thank you for the counteroffer. Would you accept three hundred and sixty-five dollars?",
+    "seller": "Thank you for your offer of three hundred and sixty-five dollars, but I can't accept that. The best I can do is $370, and I can still include a case with it. Would you like to go with that?",
+    "streamed": [],
+    "t": 34.3
+   },
+   {
+    "buyer": "I understand, but would you accept three hundred and fifty dollars?",
+    "seller": "I appreciate your offer of three hundred and fifty dollars, but I can't accept that. The lowest I can go is $370, and I would also include a case with it. How does that sound?",
+    "streamed": [],
+    "t": 40.5
+   },
+   {
+    "buyer": "Thank you for your offer. I will have to WALK.",
+    "seller": null,
+    "t": 41.6
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 43.6
+}

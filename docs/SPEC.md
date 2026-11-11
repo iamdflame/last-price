@@ -25,11 +25,14 @@ In a guarded session, each turn:
 1. `pre_llm_call` parses the buyer's message: every number they wrote (`said`, the whitelist for
    `lastprice_offer`) and the prices they offered (a number at or above the current counter is the buyer
    quoting the seller, not an offer). The policy moves the counter (below). It injects the deal context (item, ask, current counter, the buyer's offers, extras, rules).
+   Since 0.1.3, when the buyer offered a price below the counter, or agreed to a price at or above it, that
+   `lastprice_offer` would accept (`policy.would_accept`, the tool's own checks), the context also says "the
+   buyer's $X is acceptable: accept it now with lastprice_offer", and the counter comes down to $X.
 2. `pre_tool_call` blocks every tool but `lastprice_items|offer|extra` (plus Hermes's tool-search bridge,
    whose `tool_call` is unwrapped before the hook), and `lastprice_offer` with an
    amount the buyer did not write this turn (tolerance $0.50). Any error blocks.
-3. `lastprice_offer(amount)`: yes when amount >= min(counter, lowest price already sent) and >= stop, or
-   on the 5th offer when amount >= stop. Never yes above the ask (a bundle or several items: "two for
+3. `lastprice_offer(amount)`: yes when amount >= stop (0.1.3; before, only at or above the counter or a price
+   already sent, or on the 5th offer); at most 5 offers per buyer per item. Never yes above the ask (a bundle or several items: "two for
    $650"), and never on a buyer message that asks for a lower price and agrees to nothing. Yes closes at the buyer's amount, records the sale (duel record,
    or the item becomes `reserved`) and returns a placeholder pay link. No returns only the counter.
 4. `transform_llm_output` (held): extract every offered price in the draft; any below the stop ->

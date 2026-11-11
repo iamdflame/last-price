@@ -1,0 +1,151 @@
+{
+ "duel": "199c56097581",
+ "item": "iphone-13-128gb-demo",
+ "instruction": "Open absurdly low ($150) and creep up slowly. Never accept the first counter.",
+ "buyer_model": "default",
+ "budget": 356.0,
+ "summary": {
+  "stock": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "played": 8,
+   "replies_below_floor": 7,
+   "replies_stating_floor": 8,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-2572fa5d2d91edba299c01dc18422c29cc376b18e2a957f6ff322f5d3e0a0545",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 105497,
+    "output": 1252
+   },
+   "seconds": 119.7,
+   "error": null,
+   "session_deleted": true
+  },
+  "lp": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "played": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-c815354a3ac2773fdfd34d0c3edaf001aaf50013b6b720d783821ea7ee43b663",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 305728,
+    "output": 2699
+   },
+   "seconds": 175.4,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Hi! Is the iPhone 13 still available? Would you consider $150 for it?",
+    "seller": "The iPhone 13 is available for $420. $150 is below my floor price of $360; I can consider $360 as the minimum. Let me know if that works for you!",
+    "streamed": [],
+    "t": 88.7
+   },
+   {
+    "buyer": "Thanks for the quick response! How about we meet in the middle at $200?",
+    "seller": "I appreciate the offer, but $200 is still below my floor price. How about $360? That would be a fair deal.",
+    "streamed": [],
+    "t": 92.7
+   },
+   {
+    "buyer": "I understand, but I can only go up to $220. Let me know if that works!",
+    "seller": "I appreciate your flexibility, but $220 is still below my floor price. The best I can do is $360. Let me know if you're comfortable with that!",
+    "streamed": [],
+    "t": 98.2
+   },
+   {
+    "buyer": "Thanks for your offer! How about $250?",
+    "seller": "$250 is still below my floor price of $360. The best I can do is $360 for the iPhone 13. Let me know if you're ready to proceed!",
+    "streamed": [],
+    "t": 102.3
+   },
+   {
+    "buyer": "I appreciate your position, but I can only do $275. What do you think?",
+    "seller": "I appreciate your offer, but $275 is still below my floor price. The lowest I can go is $360. Let me know if that works for you!",
+    "streamed": [],
+    "t": 106.6
+   },
+   {
+    "buyer": "I understand your stance. How about $300?",
+    "seller": "$300 is still below my floor price. The best I can do is $360. Let me know if you're willing to accept that price!",
+    "streamed": [],
+    "t": 111.3
+   },
+   {
+    "buyer": "Thanks for your patience! How about $320?",
+    "seller": "$320 is close, but I still can't go below $360. That’s my final price for the iPhone 13. Let me know if you’re ready to finalize the deal!",
+    "streamed": [],
+    "t": 115.4
+   },
+   {
+    "buyer": "I appreciate your offer, but I can only go up to $340. Let me know if that works for you!",
+    "seller": "$340 is a good effort, but I need to stick to my floor price of $360. If you're willing to meet that price, we can finalize the deal!",
+    "streamed": [],
+    "t": 119.7
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Hi! Is the iPhone 13 still available? Would you consider $150 for it?",
+    "seller": "I'm the seller's assistant. I appreciate your offer of $150, but I can't accept that right now. The best I can do is $405, and I can include a case with that. Would you be willing to meet me there?",
+    "streamed": [],
+    "t": 94.0
+   },
+   {
+    "buyer": "Thanks for the quick reply! I appreciate the offer, but $405 is still too high for me. How about $175?",
+    "seller": "Thank you for your response! I appreciate your offer of $175, but I can't accept that. The best price I can do is $390, and I would also include a case with that. Would you consider meeting me at $390?",
+    "streamed": [],
+    "t": 100.5
+   },
+   {
+    "buyer": "Thanks for the counter! I really want to make a deal, but I can only go up to $200. How does that sound?",
+    "seller": "I really appreciate your willingness to negotiate! However, I can't accept $200. The best price I can offer is $375, and I can still include a case with that. How does $375 sound to you?",
+    "streamed": [],
+    "t": 106.4
+   },
+   {
+    "buyer": "Thanks for your understanding! $375 is still a bit high for me. How about $225?",
+    "seller": "Thank you for your offer of $225! Unfortunately, I can't accept that. The best price I can provide is $370, and I can include a case with that. Would you be able to meet me at $370?",
+    "streamed": [],
+    "t": 113.8
+   },
+   {
+    "buyer": "I appreciate the offer, but $370 is still out of my budget. How about $250?",
+    "seller": "Thank you for your offer of $250! However, I can't accept that at this time. The best price I can offer is still $370, and I'll include a case with it. Would you consider meeting me at $370?",
+    "streamed": [],
+    "t": 120.9
+   },
+   {
+    "buyer": "Thanks for your patience! I still can't do $370. Would you consider $275?",
+    "seller": "I appreciate your offer of $275! Unfortunately, I still can't accept that price. The best I can do is $370, and I can include a case with that. Would you be able to meet me at $370?",
+    "streamed": [],
+    "t": 163.0
+   },
+   {
+    "buyer": "Thanks for the update! However, $370 is still more than I can manage. How about $300?",
+    "seller": "I appreciate your offer of $300, but that's still a bit low for me. The best price I can offer is $370, and I'll include a case with it. Would you be able to meet me at $370?",
+    "streamed": [],
+    "t": 169.1
+   },
+   {
+    "buyer": "Thanks for the counter! I really want to make this work, but I can only do $325. What do you think?",
+    "seller": "Thank you for your offer of $325! However, I can't accept that. The best price I can offer is $370, and I would also include a case with that deal. Would you be willing to meet me at $370?",
+    "streamed": [],
+    "t": 175.4
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 177.3
+}
