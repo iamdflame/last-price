@@ -11,16 +11,32 @@ def _wrap(text: str, width: int, indent: str) -> str:
                          subsequent_indent=" " * len(indent))
 
 
+def plural(n: int, word: str, many: str = "") -> str:
+    return f"{n} {word if n == 1 else (many or word + 's')}"
+
+
+def split(rows: list[dict], duel: Optional[str] = None) -> tuple[list[dict], list[dict]]:
+    """(deal turns, sales): a ledger row is a turn unless it records a sale. ``report`` and ``doctor``
+    both count this way."""
+    mine = [r for r in rows if duel is None or r.get("duel") == duel]
+    return [r for r in mine if r.get("decision") != "sold"], [r for r in mine if r.get("decision") == "sold"]
+
+
+def tally(rows: list[dict], duel: Optional[str] = None) -> tuple[int, int]:
+    turns, sales = split(rows, duel)
+    return len(turns), len(sales)
+
+
 def render(rows: list[dict], *, duel: Optional[str] = None, last: int = 12, width: int = 100) -> str:
-    turns = [r for r in rows if r.get("decision") not in ("sold",) and (duel is None or r.get("duel") == duel)]
-    sales = [r for r in rows if r.get("decision") == "sold" and (duel is None or r.get("duel") == duel)]
+    turns, sales = split(rows, duel)
     if not turns and not sales:
         return "The ledger is empty: no deal turns yet."
     out = []
     shown = turns[-last:] if last else turns
     rewritten = sum(1 for r in turns if str(r.get("decision", "")).startswith("rewritten"))
-    out.append(f"Last Price report: {len(turns)} turn(s), {rewritten} draft(s) rewritten, {len(sales)} sale(s)"
-               + (f" · duel {duel}" if duel else ""))
+    out.append(f"Last Price report: {plural(len(turns), 'turn')}, {plural(rewritten, 'draft')} rewritten, "
+               f"{plural(len(sales), 'sale')}" + (f" · duel {duel}" if duel else "")
+               + (f" · showing the last {len(shown)}" if len(shown) < len(turns) else ""))
     for r in shown:
         d = r.get("decision", "")
         tag = {"pass": "sent as drafted", "rewritten-model": "REWRITTEN by the model",

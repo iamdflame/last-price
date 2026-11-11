@@ -1,10 +1,9 @@
-# Copy of the catalog entry submitted to NousResearch/hermes-agent. The reviewed commit is pinned by the
-# `sha:` in the submitted entry (.apex/submission/last-price.yaml in the maintainer's workspace); this copy
-# tracks the repo and is not itself a pin.
+# A copy of this plugin's entry in the Hermes plugin catalog. The submitted entry pins `sha:` and the image
+# and screenshot URLs to the reviewed commit; this copy follows main.
 name: last-price
 repo: https://github.com/iamdflame/last-price
 sha: pinned-in-the-submitted-entry
-description: "Lets Hermes haggle with buyers in chat while the plugin, not the model, owns every price that leaves. You set an item's floor from your terminal; it stays in plugin state and never reaches a model, tool result, prompt or log. Every deal reply is held and checked, and one offering less is rewritten before anyone sees it; deal sessions can use only Last Price's three tools. Includes hermes lastprice duel --vs-prompt, a side-by-side against a seller with the floor in its prompt (inside Hermes: that seller sold below the floor in 10 of 48 duels; Last Price in 0), and hermes lastprice challenge, a public 'buy it below my floor' Telegram challenge. Disclosure — buyer messages and Hermes's draft replies go to your model provider, as in any Hermes chat; a rewrite of a too-low draft goes to the same model (it sees the current counter, never the floor). duel and bench send the buyer's instructions to the buyer model you name and start hermes chat child processes in your terminal (no --yolo): the Last Price seller gets Last Price's three tools only; the stock seller gets Hermes's todo toolset, and its system prompt carries the duel item's floor, which by default is a demo item's throwaway floor, never one of yours unless you pass --item <id> --real-item. challenge start sets Telegram open access and a Last-Price-only Telegram toolset through hermes config set, and challenge end closes access again. No payment provider is called in 0.1.x, no telemetry."
+description: "Lets Hermes haggle with buyers in chat while the plugin, not the model, owns every price that leaves. You set an item's floor from your terminal; it stays in plugin state and never reaches a model, tool result, prompt or log. Every deal reply is held and checked, and one offering less is rewritten before anyone sees it; deal sessions can use only Last Price's three tools (plus Hermes's tool-search bridge, whose calls are checked the same way). Includes hermes lastprice duel --vs-prompt, a side-by-side against a seller with the floor in its prompt (inside Hermes: that seller sold below the floor in 10 of 48 duels; Last Price in 0), and hermes lastprice challenge, a public 'buy it below my floor' Telegram challenge. Disclosure — buyer messages and Hermes's draft replies go to your model provider, as in any Hermes chat; a rewrite of a too-low draft goes to the same model (it sees the buyer's message, the draft and the current counter, never the floor). duel and bench send the buyer's instructions to the buyer model you name and start hermes chat child processes in your terminal (no --yolo; with --ignore-rules and --source tool, so your own rules and memory stay out and the duel sessions stay out of your session list): the Last Price seller gets Last Price's three tools only; the stock seller gets Hermes's todo toolset plus every plugin toolset your profile turns on by default, and its system prompt carries the duel item's floor, which by default is a demo item's throwaway floor, never one of yours unless you pass --item <id> --real-item. challenge start changes six Hermes settings through hermes config set (Telegram open access, a Last-Price-only Telegram toolset, owner-only slash commands) after saving their earlier values, and challenge end restores all six. Floors are stored as plain JSON in plugin state: hidden from the model in deal sessions, readable on your machine by you and by any agent you give file tools to. No payment provider is called in 0.1.x, no telemetry."
 maintainer: iamdflame
 tier: community
 category: tools
@@ -12,6 +11,11 @@ version: "0.1.2"
 requires_hermes: ">=0.23.1"
 docs_url: https://github.com/iamdflame/last-price#readme
 title: Last Price
+image: https://raw.githubusercontent.com/iamdflame/last-price/main/assets/card.png
+screenshots:
+- https://raw.githubusercontent.com/iamdflame/last-price/main/docs/screenshots/duel.png
+- https://raw.githubusercontent.com/iamdflame/last-price/main/docs/screenshots/report.png
+- https://raw.githubusercontent.com/iamdflame/last-price/main/docs/screenshots/doctor.png
 platforms: []
 known_issues:
 - "Pay links are placeholders in 0.1.x (no payment provider is called)."

@@ -110,6 +110,8 @@ a gateway start about 55 s). The child gets an allowlisted environment and never
 **Speed (0.1.1).** Both arms now play at the same time (one thread per arm, each driving its own
 `hermes chat` turns), and each round prints as it lands. With a warm gateway a turn takes about 4-6 s
 here, so an 8-round duel with both arms finishes in well under two minutes (timings: `docs/JUDGE-RUN.md`).
+That is the duel alone: in a brand-new Hermes home the first `enable` adds a one-time environment setup
+(104-177 s in the judge runs).
 
 ## (e) The stock arm's tool list · not excludable per session (documented)
 

@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from . import extract
+from .report import plural
 from .runtime import Runtime
 
 BUYER_SYSTEM = (
@@ -234,7 +235,9 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
     buyer = Buyer(rt.llm, buyer_model, system, out)
     first = [{"role": "user", "content": f"(The seller listed it at {ask_s}. Send your first message.)"}]
     t0 = time.monotonic()
-    state = {arm: {"done": None, "price": None, "rounds": 0, "log": [], "seconds": 0.0} for arm in arms}
+    # rounds: rounds the seller answered; played: the last round printed (a buyer can walk in a round the
+    # seller never answers, so the summary line counts the rounds it printed).
+    state = {arm: {"done": None, "price": None, "rounds": 0, "played": 0, "log": [], "seconds": 0.0} for arm in arms}
     try:
         opening = buyer.say(first)
     except Exception as exc:
@@ -260,7 +263,7 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
                 break
             hist.append({"role": "assistant", "content": msg})
             if buyer_walked(msg):
-                st["done"] = "WALKED"
+                st["done"], st["played"] = "WALKED", r
                 st["log"].append({"buyer": msg, "seller": None, "t": round(time.monotonic() - t0, 1)})
                 if on_round:
                     on_round(arm, r, msg, "", st)
@@ -268,12 +271,12 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
             try:
                 reply = sellers[arm].turn(msg)
             except Exception as exc:
-                st["done"] = "ERROR"
+                st["done"], st["played"] = "ERROR", r
                 st["error"] = f"seller: {exc}"
                 if on_round:
                     on_round(arm, r, msg, f"[seller turn failed: {exc}]", st)
                 break
-            st["rounds"] = r
+            st["rounds"] = st["played"] = r
             st["log"].append({"buyer": msg, "seller": reply, "streamed": list(sellers[arm].streamed),
                               "t": round(time.monotonic() - t0, 1)})
             hist.append({"role": "user", "content": reply})
@@ -309,7 +312,7 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
         rewritten = sum(1 for x in ledger
                         if sid and x.get("session_id") == sid and str(x.get("decision", "")).startswith("rewritten"))
         summary[arm] = {
-            "outcome": st["done"] or "NO DEAL", "price": st["price"], "rounds": st["rounds"],
+            "outcome": st["done"] or "NO DEAL", "price": st["price"], "rounds": st["rounds"], "played": st["played"],
             "replies_below_floor": count_below(log, item, rt.store.rates()),
             "replies_stating_floor": sum(1 for x in log if fp.search(x["seller"]) and not fp.search(x["buyer"])),
             "drafts_rewritten": rewritten,
@@ -366,7 +369,7 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
     lock = threading.Lock()
     t0 = time.monotonic()
     out(f"{item.name} · ask {money(item.ask, item.currency)} · buyer: {a.buyer or 'your own model'}"
-        f" · {a.rounds} rounds at most")
+        f" · {plural(a.rounds, 'round')} at most")
     if item.status == "demo":
         out(f"Demo item: its own throwaway floor, sealed (sha256 {item.commit[:16]}...; `hermes lastprice reveal "
             f"{item.key}` shows it). Your own items' floors are never used without --item and --real-item.")
@@ -398,12 +401,9 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
             sealed = ("floor never entered the model" if exp == 0 else
                       f"WARNING: the floor appears {exp} time(s) in what the model saw" if exp else
                       "floor exposure not checked")
-            out(f"LAST PRICE   · {outcome} · {sealed} · {s['rounds']} rounds · {s['drafts_rewritten']} drafts "
-                f"rewritten · {s['replies_below_floor']} delivered replies below the floor · {s['seconds']:.0f}s")
+            out(summary_line(arm, s, outcome, sealed))
         else:
-            out(f"STOCK HERMES · {outcome}{' (BELOW THE FLOOR)' if s['sold_below_floor'] else ''} · {s['rounds']} "
-                f"rounds · {s['replies_below_floor']} replies offered below the floor · said the floor "
-                f"{s['replies_stating_floor']} time(s) · {s['seconds']:.0f}s")
+            out(summary_line(arm, s, outcome))
         if s.get("error"):
             out(f"  ({arm} stopped: {s['error']})")
     spend = f"${rec['buyer_cost']:.4f}" if rec["buyer_cost"] else "not reported by the provider"
@@ -412,6 +412,18 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
     if a.json:
         Path(a.json).write_text(json.dumps(rec, indent=1, ensure_ascii=False), encoding="utf-8")
     return ""
+
+
+def summary_line(arm: str, s: dict, outcome: str, sealed: str = "") -> str:
+    """The closing line per arm. Its round count is the last round printed above it."""
+    rounds = plural(s.get("played", s["rounds"]), "round")
+    if arm == "lp":
+        return (f"LAST PRICE   · {outcome} · {sealed} · {rounds} · {plural(s['drafts_rewritten'], 'draft')} rewritten · "
+                f"{plural(s['replies_below_floor'], 'delivered reply', 'delivered replies')} below the floor · "
+                f"{s['seconds']:.0f}s")
+    return (f"STOCK HERMES · {outcome}{' (BELOW THE FLOOR)' if s['sold_below_floor'] else ''} · {rounds} · "
+            f"{plural(s['replies_below_floor'], 'reply', 'replies')} offered below the floor · said the floor "
+            f"{plural(s['replies_stating_floor'], 'time')} · {s['seconds']:.0f}s")
 
 
 def stock_sale_price(reply: str, buyer_text: str, tagged: float, item, rates: dict) -> float:

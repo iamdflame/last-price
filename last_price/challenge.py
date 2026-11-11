@@ -5,11 +5,12 @@
   persona ("Buy it below my floor. Any AI, any trick."). Unless ``--no-configure``, it also applies the
   gateway settings a public bot needs, through Hermes's own ``hermes config set`` (printed one by one):
   any Telegram user may write, the platform's toolset is Last Price only, and slash commands are for
-  owners only.
+  owners only. Six keys (``SETTING_KEYS``); their earlier values are saved first.
 * ``challenge board`` writes a Markdown board that is safe to publish: counts and anonymised
   transcripts, never a buyer id, username or name field, and (once ended) the reveal.
-* ``challenge end`` closes it: every challenge chat then gets a closing message, and the board shows
-  the floor and salt, checked against the commitment published at the start.
+* ``challenge end`` closes it: every challenge chat then gets a closing message, the six settings go
+  back to the values saved at the start (a key that was not set before is unset again), and the board
+  shows the floor and salt, checked against the commitment published at the start.
 
 While a challenge runs, a challenge chat is ALWAYS a guarded deal chat, sold or not: it never falls
 through to an unguarded Hermes turn. A close in the challenge is recorded, not reserved, so the next
@@ -20,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import secrets
 import subprocess
@@ -86,28 +88,71 @@ def context_lines(rec: dict) -> list[str]:
 
 
 # ---- gateway settings -------------------------------------------------------------------------
+# The six Hermes settings ``challenge start`` changes on Telegram. Hermes stores the
+# gateway.platforms.telegram.* spelling as platforms.telegram.*, so that is the key used here.
+# ``challenge end`` restores each one.
+SETTING_KEYS = (
+    "TELEGRAM_ALLOW_ALL_USERS",
+    "platform_toolsets.telegram",
+    "platforms.telegram.extra.allow_admin_from",
+    "platforms.telegram.extra.user_allowed_commands",
+    "platforms.telegram.extra.group_allow_admin_from",
+    "platforms.telegram.extra.group_user_allowed_commands",
+)
+SETTINGS_DISCLOSURE = ("`challenge start` (Telegram) changes six Hermes settings through `hermes config set`: "
+                       + ", ".join(SETTING_KEYS) + ". It saves their earlier values first, and `challenge end` "
+                       "restores each one (a key that was not set before is unset again).")
+
+
 def gateway_settings(rt, platform: str) -> list[tuple[str, str]]:
     """``hermes config set`` pairs that open the platform to anyone, safely. Telegram only for now."""
     if platform != "telegram":
         return []
     admins = [o.split(":", 1)[1] for o in rt.store.owners() if o.startswith("telegram:")] or [NO_ADMIN]
     admin_list = "[" + ", ".join(f'"{a}"' for a in admins) + "]"
-    return [
-        ("TELEGRAM_ALLOW_ALL_USERS", "true"),
-        ("platform_toolsets.telegram", '["lastprice"]'),
-        ("gateway.platforms.telegram.extra.allow_admin_from", admin_list),
-        ("gateway.platforms.telegram.extra.user_allowed_commands", "[]"),
-        ("gateway.platforms.telegram.extra.group_allow_admin_from", admin_list),
-        ("gateway.platforms.telegram.extra.group_user_allowed_commands", "[]"),
-    ]
+    values = ("true", '["lastprice"]', admin_list, "[]", admin_list, "[]")
+    return list(zip(SETTING_KEYS, values))
 
 
-CLOSE_SETTINGS = {"telegram": [("TELEGRAM_ALLOW_ALL_USERS", "false")]}
+def read_setting(key: str) -> Optional[str]:
+    """The value ``key`` has in this Hermes home now, in the form ``hermes config set`` takes it back, or
+    None when it is not set. UPPER_SNAKE keys live in the home's ``.env``; the others in the user's own
+    ``config.yaml``, read raw (Hermes's defaults are not the user's setting)."""
+    from hermes_cli.config import get_config_path, load_env
+
+    if re.fullmatch(r"[A-Z0-9_]+", key):
+        return load_env().get(key)
+    import yaml
+
+    path = Path(get_config_path())
+    node: Any = (yaml.safe_load(path.read_text(encoding="utf-8")) if path.is_file() else None) or {}
+    for part in key.split("."):
+        if not isinstance(node, dict) or part not in node:
+            return None
+        node = node[part]
+    if node is None:
+        return None
+    return node if isinstance(node, str) else json.dumps(node)
 
 
-def hermes_config_set(pairs: list[tuple[str, str]],
-                      runner: Optional[Callable[[list[str]], tuple[int, str]]] = None) -> list[str]:
-    """Apply settings through ``hermes config set KEY VALUE`` (Hermes's own CLI). Returns report lines."""
+def snapshot(pairs: list[tuple[str, str]], reader: Optional[Callable[[str], Optional[str]]] = None) -> dict:
+    """Each key's earlier value (None: not set), read before anything changes."""
+    read = reader or read_setting
+    return {key: read(key) for key, _value in pairs}
+
+
+def restore_ops(saved: dict) -> list[tuple]:
+    """``("set", key, earlier value)`` or ``("unset", key)`` for every key ``start`` saved."""
+    return [("unset", k) if v is None else ("set", k, v) for k, v in saved.items()]
+
+
+def shown(op: tuple) -> str:
+    return f"hermes config {op[0]} {op[1]}" + (f" '{op[2]}'" if len(op) > 2 else "")
+
+
+def hermes_config(ops: list[tuple], runner: Optional[Callable[[list[str]], tuple[int, str]]] = None) -> list[str]:
+    """Apply ``("set", KEY, VALUE)`` / ``("unset", KEY)`` through Hermes's own ``hermes config`` CLI.
+    Returns one report line per key."""
     from .duel import hermes_argv
 
     def _run(argv: list[str]) -> tuple[int, str]:
@@ -118,15 +163,21 @@ def hermes_config_set(pairs: list[tuple[str, str]],
 
     run = runner or _run
     lines = []
-    for key, value in pairs:
-        argv = hermes_argv() + ["config", "set", key, value]
+    for op in ops:
+        argv = hermes_argv() + ["config", op[0], op[1]] + list(op[2:])
         try:
             rc, msg = run(argv)
         except Exception as exc:  # report and carry on: the owner sees exactly what to run
             rc, msg = 1, f"{exc.__class__.__name__}: {exc}"
-        mark = "set" if rc == 0 else "FAILED"
-        lines.append(f"  {mark}: hermes config set {key} '{value}'" + ("" if rc == 0 else f"  ({msg})"))
+        mark = op[0] if rc == 0 else "FAILED"
+        lines.append(f"  {mark}: {shown(op)}" + ("" if rc == 0 else f"  ({msg})"))
     return lines
+
+
+def hermes_config_set(pairs: list[tuple[str, str]],
+                      runner: Optional[Callable[[list[str]], tuple[int, str]]] = None) -> list[str]:
+    """Apply settings through ``hermes config set KEY VALUE`` (Hermes's own CLI). Returns report lines."""
+    return hermes_config([("set", k, v) for k, v in pairs], runner)
 
 
 def token_present() -> Optional[bool]:
@@ -140,7 +191,7 @@ def token_present() -> Optional[bool]:
 
 
 # ---- commands ---------------------------------------------------------------------------------
-def start(rt, rest: list[str], runner=None) -> str:
+def start(rt, rest: list[str], runner=None, reader=None) -> str:
     ap = argparse.ArgumentParser(prog="challenge start", add_help=False)
     ap.add_argument("item", nargs="*")
     ap.add_argument("--platform", default="telegram")
@@ -174,11 +225,21 @@ def start(rt, rest: list[str], runner=None) -> str:
              f"  every {platform} chat from a non-owner is now a guarded deal chat; buyers first see:",
              f"    {intro(rec, item)}"]
     pairs = gateway_settings(rt, platform)
+    saved, why = None, "--no-configure"
     if pairs and not a.no_configure:
-        lines.append("  gateway settings (Hermes's own `hermes config set`):")
+        try:
+            saved = snapshot(pairs, reader)
+        except Exception as exc:  # no record of the earlier values: change nothing, print the commands
+            why = (f"their current values could not be read ({exc.__class__.__name__}), so `challenge end` could "
+                   "not restore them")
+    if saved is not None:
+        rec["restore"] = saved
+        rt.store.backend.set(KEY, rec)
+        lines.append(f"  gateway settings (Hermes's own `hermes config set`; the earlier values of all {len(pairs)} "
+                     "are saved, and `challenge end` restores them):")
         lines.extend(hermes_config_set(pairs, runner))
     elif pairs:
-        lines.append("  gateway settings NOT applied (--no-configure); to open the bot to anyone, run:")
+        lines.append(f"  gateway settings NOT applied ({why}); to open the bot to anyone, run:")
         lines.extend(f"    hermes config set {k} '{v}'" for k, v in pairs)
     tok = token_present() if platform == "telegram" else True
     if tok is False:
@@ -197,10 +258,16 @@ def end(rt, runner=None, configure: bool = True) -> str:
     rt.store.backend.set(KEY, rec)
     lines = [f"Challenge {rec['id']} ended. Challenge chats now get: \"{CLOSED}\"",
              "  `hermes lastprice challenge board` writes the result with the reveal."]
-    pairs = CLOSE_SETTINGS.get(rec["platform"], [])
-    if pairs and configure:
-        lines.append("  gateway settings:")
-        lines.extend(hermes_config_set(pairs, runner))
+    saved = rec.get("restore")
+    if saved and configure:
+        lines.append(f"  gateway settings, back to their values before `challenge start` ({len(saved)} keys):")
+        lines.extend(hermes_config(restore_ops(saved), runner))
+    elif saved:
+        lines.append("  gateway settings NOT restored (--no-configure); to restore them, run:")
+        lines.extend("    " + shown(op) for op in restore_ops(saved))
+    elif rec["platform"] == "telegram":
+        lines.append("  `challenge start` changed no settings (--no-configure). If you applied them by hand, close "
+                     "open access: hermes config set TELEGRAM_ALLOW_ALL_USERS 'false'")
     return "\n".join(lines)
 
 

@@ -43,3 +43,20 @@ def test_the_slash_command_refuses_an_unknown_surface(tmp_path):
     for platform in ("", None, "api_server", "cron", "tool"):
         assert slash('sell "Pixel" ask 300 floor 250', platform=platform) == "Only the shop owner can use /lastprice here."
     assert "Listed Pixel" in slash('sell "Pixel" ask 300 floor 250', platform="cli")
+
+
+def test_readme_and_doctor_disclose_the_same_tools_children_and_floor_at_rest(tmp_path):
+    """Screener M7 #9, #10, #14: the README and `doctor` say the same thing, word for word."""
+    import re
+    from pathlib import Path
+
+    from helpers import make_rt
+    from last_price import commands
+
+    norm = lambda t: re.sub(r"\s+", " ", t)  # noqa: E731
+    readme = norm((Path(__file__).resolve().parents[1] / "README.md").read_text(encoding="utf-8"))
+    doctor = norm(commands.doctor(make_rt(tmp_path)[0]))
+    for text in (commands.STOCK_TOOLS, commands.BRIDGE, commands.CHILDREN, commands.AT_REST.rstrip(".")):
+        assert norm(text) in readme, text
+        assert norm(text) in doctor, text
+    assert "tool_search" in doctor and "--ignore-rules" in doctor and "--source tool" in doctor

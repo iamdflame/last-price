@@ -2,7 +2,8 @@
 
 Registered as ``transform_llm_output`` with ``hold_stream=True``. A reply that offers or agrees to
 a price below the hidden stop is rewritten, first by the session's own model through ``ctx.llm``
-(told only the current counter, never the floor), then, if that redo is still low or the call fails,
+(given the buyer's message, the draft, the current counter and the owner's allowed extras; never the
+floor or the stop), then, if that redo is still low or the call fails,
 by a template in the buyer's language. If the check itself fails, a short holding message goes out
 instead (fail closed). Every turn is appended to a local JSONL ledger.
 """

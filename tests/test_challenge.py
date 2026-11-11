@@ -19,9 +19,12 @@ class Runner:
         return 0, "ok"
 
 
-def _start(rt, item, **kw):
+NOTHING_SET = lambda key: None  # noqa: E731  a fresh Hermes home: none of the six keys set yet
+
+
+def _start(rt, item, reader=NOTHING_SET, **kw):
     runner = Runner()
-    out = challenge.start(rt, [item.key], runner=runner, **kw)
+    out = challenge.start(rt, [item.key], runner=runner, reader=reader, **kw)
     return out, runner
 
 
@@ -39,7 +42,7 @@ def test_start_posts_item_ask_and_commitment_and_opens_telegram(tmp_path):
     keys = [argv[-2] for argv in runner.calls]
     assert keys[:2] == ["TELEGRAM_ALLOW_ALL_USERS", "platform_toolsets.telegram"]
     assert all(argv[-4:-2] == ["config", "set"] for argv in runner.calls)
-    admins = dict((argv[-2], argv[-1]) for argv in runner.calls)["gateway.platforms.telegram.extra.allow_admin_from"]
+    admins = dict((argv[-2], argv[-1]) for argv in runner.calls)["platforms.telegram.extra.allow_admin_from"]
     assert admins == '["0"]'  # no Telegram owner yet: nobody runs slash commands there
 
 
@@ -47,7 +50,7 @@ def test_start_uses_the_owner_as_the_only_telegram_admin_and_can_skip_configurin
     rt, item = make_rt(tmp_path)
     rt.store.add_owner("telegram:777")
     _out, runner = _start(rt, item)
-    assert ["gateway.platforms.telegram.extra.allow_admin_from", '["777"]'] in [a[-2:] for a in runner.calls]
+    assert ["platforms.telegram.extra.allow_admin_from", '["777"]'] in [a[-2:] for a in runner.calls]
     rt2, item2 = make_rt(tmp_path / "b")
     runner2 = Runner()
     out = challenge.start(rt2, [item2.key, "--no-configure"], runner=runner2)
@@ -111,7 +114,7 @@ def test_end_closes_every_challenge_chat_and_the_board_reveals(tmp_path):
     _chat(rt, "hi", "tg-1", "42")
     runner = Runner()
     out = challenge.end(rt, runner=runner)
-    assert "ended" in out and runner.calls[0][-2:] == ["TELEGRAM_ALLOW_ALL_USERS", "false"]
+    assert "ended" in out and runner.calls[0][-3:] == ["config", "unset", "TELEGRAM_ALLOW_ALL_USERS"]
     assert _chat(rt, "hi again", "tg-1", "42") == {"action": "block", "message": challenge.CLOSED}
     assert _chat(rt, "new buyer", "tg-9", "99") == {"action": "block", "message": challenge.CLOSED}
     board = tmp_path / "board.md"
@@ -168,3 +171,84 @@ def test_a_second_challenge_needs_the_first_to_end(tmp_path):
     _start(rt, item)
     out, _ = _start(rt, item)
     assert "already running" in out
+
+
+def test_start_changes_six_keys_and_end_restores_every_one_to_its_earlier_value(tmp_path):
+    """Screener M7 #8: end used to reset only TELEGRAM_ALLOW_ALL_USERS, leaving the toolset and admin keys
+    changed and losing the owner's earlier values."""
+    rt, item = make_rt(tmp_path)
+    before = {"TELEGRAM_ALLOW_ALL_USERS": "false",
+              "platform_toolsets.telegram": '["hermes-telegram", "web"]',
+              "platforms.telegram.extra.allow_admin_from": '["123"]'}  # the other three: not set before
+    out, runner = _start(rt, item, reader=lambda key: before.get(key))
+    assert [a[-2] for a in runner.calls] == list(challenge.SETTING_KEYS) and len(challenge.SETTING_KEYS) == 6
+    assert "earlier values of all 6 are saved" in out
+    assert challenge.current(rt)["restore"] == {k: before.get(k) for k in challenge.SETTING_KEYS}
+    end_runner = Runner()
+    out = challenge.end(rt, runner=end_runner)
+    assert sorted(a[a.index("config") + 1:] for a in end_runner.calls) == sorted([
+        ["set", "TELEGRAM_ALLOW_ALL_USERS", "false"],
+        ["set", "platform_toolsets.telegram", '["hermes-telegram", "web"]'],
+        ["set", "platforms.telegram.extra.allow_admin_from", '["123"]'],
+        ["unset", "platforms.telegram.extra.user_allowed_commands"],
+        ["unset", "platforms.telegram.extra.group_allow_admin_from"],
+        ["unset", "platforms.telegram.extra.group_user_allowed_commands"]])
+    assert "6 keys" in out and "FAILED" not in out
+
+
+def test_start_changes_nothing_when_it_cannot_save_the_earlier_values(tmp_path):
+    rt, item = make_rt(tmp_path)
+
+    def broken(key):
+        raise OSError("config.yaml unreadable")
+    out, runner = _start(rt, item, reader=broken)
+    assert runner.calls == [] and "NOT applied" in out and "could not be read" in out
+    assert "restore" not in challenge.current(rt)
+    end_runner = Runner()
+    out = challenge.end(rt, runner=end_runner)
+    assert end_runner.calls == [] and "changed no settings" in out
+
+
+def test_end_with_no_configure_prints_the_restore_commands(tmp_path):
+    rt, item = make_rt(tmp_path)
+    _start(rt, item, reader=lambda key: "false" if key == "TELEGRAM_ALLOW_ALL_USERS" else None)
+    runner = Runner()
+    out = challenge.run(rt, ["end", "--no-configure"], runner=runner)
+    assert runner.calls == [] and "hermes config set TELEGRAM_ALLOW_ALL_USERS 'false'" in out
+    assert "hermes config unset platform_toolsets.telegram" in out
+
+
+def test_read_setting_reads_the_raw_user_config_and_env(tmp_path, monkeypatch):
+    """The earlier values come from the home's own config.yaml and .env, not Hermes's merged defaults."""
+    import sys
+    import types
+
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("platform_toolsets:\n  telegram:\n  - hermes-telegram\nplatforms:\n  telegram:\n"
+                   "    extra:\n      allow_admin_from: ['5']\n", encoding="utf-8")
+    fake = types.ModuleType("hermes_cli.config")
+    fake.get_config_path = lambda: cfg
+    fake.load_env = lambda: {"TELEGRAM_ALLOW_ALL_USERS": "false"}
+    pkg = types.ModuleType("hermes_cli")
+    pkg.config = fake
+    monkeypatch.setitem(sys.modules, "hermes_cli", pkg)
+    monkeypatch.setitem(sys.modules, "hermes_cli.config", fake)
+    try:
+        import yaml  # noqa: F401  (Hermes ships PyYAML; skip where it is absent)
+    except ImportError:
+        import pytest
+        pytest.skip("PyYAML not installed")
+    assert challenge.read_setting("TELEGRAM_ALLOW_ALL_USERS") == "false"
+    assert challenge.read_setting("platform_toolsets.telegram") == '["hermes-telegram"]'
+    assert challenge.read_setting("platforms.telegram.extra.allow_admin_from") == '["5"]'
+    assert challenge.read_setting("platforms.telegram.extra.user_allowed_commands") is None
+
+
+def test_doctor_and_docs_disclose_all_six_keys(tmp_path):
+    rt, _item = make_rt(tmp_path)
+    out = commands.doctor(rt)
+    root = __import__("pathlib").Path(__file__).resolve().parents[1]
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    howto = (root / "docs" / "CHALLENGE.md").read_text(encoding="utf-8")
+    for key in challenge.SETTING_KEYS:
+        assert key in out and key in readme and key in howto, key

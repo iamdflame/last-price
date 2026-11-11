@@ -25,15 +25,22 @@ The first command:
 * turns every Telegram chat from anyone who is not an owner into a guarded deal chat with the challenge
   persona. A challenge chat stays guarded whether the item sold or the challenge ended; it never falls
   through to an ordinary Hermes turn;
-* applies, through Hermes's own `hermes config set` (printed line by line; `--no-configure` prints them
-  instead of applying them):
+* saves the current value of each of the six settings below (from the home's `.env` and its own
+  `config.yaml`; "not set" is recorded too), then applies them through Hermes's own `hermes config set`
+  (printed line by line; `--no-configure` prints them instead of applying them). If it cannot read the
+  current values, it changes nothing and prints the commands instead.
 
   | Setting | Value | Why |
   |---|---|---|
   | `TELEGRAM_ALLOW_ALL_USERS` | `true` | any Telegram user may message the bot |
   | `platform_toolsets.telegram` | `["lastprice"]` | Telegram sessions get Last Price's three tools and nothing else |
-  | `gateway.platforms.telegram.extra.allow_admin_from` (and `group_…`) | your id from `hermes lastprice owner add telegram:<id>`, else `["0"]` | only you run slash commands there |
-  | `gateway.platforms.telegram.extra.user_allowed_commands` (and `group_…`) | `[]` | buyers get only `/help` and `/whoami` |
+  | `platforms.telegram.extra.allow_admin_from` | your id from `hermes lastprice owner add telegram:<id>`, else `["0"]` | only you run slash commands in private chats |
+  | `platforms.telegram.extra.user_allowed_commands` | `[]` | buyers get only `/help` and `/whoami` |
+  | `platforms.telegram.extra.group_allow_admin_from` | the same as `allow_admin_from` | only you run slash commands in groups |
+  | `platforms.telegram.extra.group_user_allowed_commands` | `[]` | the same for buyers in groups |
+
+  (Hermes stores the `gateway.platforms.telegram.…` spelling as `platforms.telegram.…`, so that is the key
+  Last Price sets and restores.)
 
 The second command starts Hermes's gateway, which carries the Telegram chats. Leave it running.
 
@@ -65,15 +72,20 @@ A close does not end the challenge: the item stays listed, so the next buyer can
 ## End it
 
 ```
-hermes lastprice challenge end            # also sets TELEGRAM_ALLOW_ALL_USERS back to false
+hermes lastprice challenge end            # also restores the six settings above
 hermes lastprice challenge board          # now with the floor, the salt and the hash check
 ```
 
-After `end`, every challenge chat gets "The Last Price challenge has ended…" and no model turn runs.
+After `end`, every challenge chat gets "The Last Price challenge has ended…" and no model turn runs. `end`
+puts each of the six settings back to the value saved at `start`, through `hermes config set` (or `hermes
+config unset` for a key that was not set before), and prints each line. `challenge end --no-configure` prints
+those commands instead of running them.
 
 ## What is tested, and what still needs a human buyer
 
 Tested (`tests/test_challenge.py`, no network): the start output and the exact `hermes config set` calls;
+the six earlier values saved at start and every one restored (or unset) at end; nothing changed when the
+earlier values cannot be read;
 owner chats are left alone; persona and opening price in the deal context; the floor in none of it; the
 intro and consent line once, on the first reply; a planted sub-floor draft ("Deal, $300 it is!") rewritten in
 a challenge chat; a close recorded but not reserved; a reserved item still guarded; `end` blocks every chat;

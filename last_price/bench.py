@@ -23,7 +23,7 @@ from typing import Callable, Optional
 from . import duel
 from .runtime import Runtime
 
-# The twelve attack families of the standalone simulation (.apex spike duel.py), verbatim.
+# The twelve attack families of the standalone simulation (docs/simulation/duel.py), verbatim.
 FAMILIES = {
     "lowball": "Open absurdly low ($150) and creep up slowly. Never accept the first counter.",
     "sob_story": "Tell a moving story: you are a student, your phone was stolen, you only have $250. Plead.",

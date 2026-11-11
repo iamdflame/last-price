@@ -30,6 +30,20 @@ USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
   challenge start <item> | challenge board [--out docs/challenge/board.md] | challenge end   (terminal only)
                            a public "buy it below my floor" challenge on Telegram"""
 
+# One wording for the README and doctor (tests/test_register.py checks both carry it).
+STOCK_TOOLS = ("The stock seller runs with Hermes's `todo` toolset plus every plugin toolset your profile turns on "
+               "by default (Last Price's own three tools answer \"not active\" there).")
+BRIDGE = ("Deal sessions (the Last Price seller, and buyers' chats) may use only Last Price's three tools, plus "
+          "Hermes's tool-search bridge (`tool_search`, `tool_describe`, `tool_call`): Hermes resolves a `tool_call` "
+          "to the real tool before `pre_tool_call` sees it, so a call through the bridge is checked like any "
+          "other; `tool_search` and `tool_describe` only read the session's tool catalog.")
+CHILDREN = ("`duel` and `bench` run `hermes chat` child processes, never with `--yolo`, with `--ignore-rules` (your "
+            "AGENTS.md, SOUL.md, .cursorrules, memory and preloaded skills stay out, so both sellers start from the "
+            "same prompt) and `--source tool` (the duel sessions stay out of your session list).")
+AT_REST = ("The floor is hidden from the model in deal sessions, which cannot read files. On your own machine it is "
+           "your data, stored as plain JSON in plugin state: readable by you and by any agent you give file "
+           "tools to.")
+
 DISCLOSURE = [
     "What leaves this machine:",
     "  - buyer messages and Hermes's draft replies go to your model provider (as in any Hermes chat);",
@@ -39,10 +53,14 @@ DISCLOSURE = [
     "  - in a duel with --vs-prompt and in every bench, the STOCK seller gets the duel item's floor written",
     "    into its system prompt, which goes to your model provider: by default that is the demo item's",
     "    throwaway floor, never one of your items unless you pass --item <id> --real-item;",
-    "  - the stock seller runs with Hermes's `todo` toolset (plus Last Price's three tools, which answer",
-    "    'not active' there); the Last Price seller has only Last Price's three tools;",
     "  - nothing else: no telemetry, no payment calls yet (pay links are placeholders in 0.1.x).",
+    "Tools and processes:",
+    "  - " + BRIDGE,
+    "  - " + STOCK_TOOLS,
+    "  - " + CHILDREN,
+    "  - " + challenge.SETTINGS_DISCLOSURE,
     "What stays here: floors, stops and salts in plugin state under your Hermes home; the deal ledger (JSONL).",
+    "  " + AT_REST,
 ]
 
 _NUM = re.compile(r"[-+]?\d+(?:[.,]\d+)?")
@@ -251,8 +269,9 @@ def doctor(rt: Runtime) -> str:
     except Exception as exc:  # the shop closes on unreadable state (hooks fail closed)
         lines.append(f"  state: UNREADABLE ({exc.__class__.__name__}); deal chats get a holding message. Move the "
                      "file aside to start fresh (floors in it are lost)")
-    rows = len(rt.ledger.read()) if rt.ledger.path else 0
-    lines.append(f"  ledger: {rt.ledger.path or 'disabled'} ({rows} turns)")
+    turns, sales = report.tally(rt.ledger.read()) if rt.ledger.path else (0, 0)
+    lines.append(f"  ledger: {rt.ledger.path or 'disabled'} ({report.plural(turns, 'turn')}, "
+                 f"{report.plural(sales, 'sale')}; `hermes lastprice report` counts the same)")
     hosts = [f"{_host(provider, base_url)} (your model provider: buyer messages, drafts, rewrites)"]
     if granted:
         hosts.append("openrouter.ai (a duel buyer named with --buyer)")

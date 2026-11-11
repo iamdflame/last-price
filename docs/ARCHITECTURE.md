@@ -41,7 +41,8 @@
 ## Public surfaces only
 
 Imports from Hermes: `hermes_state` (SessionDB, read-only), `hermes_constants.get_hermes_home`,
-`hermes_cli.config.load_config` — all listed in `hermes_cli/data/plugin_api.json`. Everything else goes
+`hermes_cli.config` (`load_config`, `get_env_value`, and `get_config_path`/`load_env` to save the challenge's six
+settings before changing them) — all listed in `hermes_cli/data/plugin_api.json`. Everything else goes
 through `ctx` (`state`, `llm`, `register_*`). `hermes plugins validate` reports no private imports and no
 core overrides (docs/SKELETON-RESULT.md).
 

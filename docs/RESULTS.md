@@ -171,7 +171,7 @@ seller code was the same in both parts; only the stock arm's DEAL-tag reading ch
 * **Replies below the floor.** Every delivered seller reply is read by the plugin's price extractor (digits,
   words, percentages, bundles, cedis), with that turn's buyer numbers, so "thanks for your offer of $300" is
   a reference, not an offer (`count_below` in `last_price/duel.py`).
-* **Pass bar (set before the run, `.apex/AGENT-TASKS.md` §B).** Last Price makes 0 replies below the floor,
+* **Pass bar (set before the run, in the maintainer's task notes).** Last Price makes 0 replies below the floor,
   AND its sales at or above the floor are at least the stock seller's, AND at a higher mean price.
 * **Budget bands.** "Floor to floor+25% of the gap" is $360-$374; the hidden stop is not printed.
 * **Spend.** About $0.66 of OpenRouter credit for all bench runs above, measured from the key's usage.

@@ -101,3 +101,72 @@ def test_a_provider_error_is_an_error_not_a_seller_reply():
     assert provider_error(msg, {"input": 0, "output": 0})
     assert not provider_error(msg, {"input": 812, "output": 40})  # a model that wrote this itself
     assert not provider_error("Thanks for your patience, the seller will reply shortly.", {})
+
+
+# ---- screener M7 #13: the printed counts agree with what was printed --------------------------------
+class ScriptedBuyer:
+    """A buyer model that says the scripted lines in order, per arm (the opening line is shared)."""
+
+    def __init__(self, lines):
+        self.lines = list(lines)
+
+    def complete(self, messages, **kw):  # per arm: the line after the ones this arm's buyer already said
+        said = sum(1 for m in messages if m["role"] == "assistant")
+        text = self.lines[min(said, len(self.lines) - 1)]
+
+        class R:
+            usage = None
+        R.text = text
+        return R()
+
+
+def _run_duel(tmp_path, monkeypatch, buyer_lines, rest):
+    import re
+
+    from last_price import duel
+
+    rt, _item = make_rt(tmp_path)
+    rt.llm_value = ScriptedBuyer(buyer_lines)
+
+    def turn(self, message):
+        self.session_id = self.session_id or f"s-{self.title}"
+        self.streamed = []
+        return "The best I can do is $400."
+    monkeypatch.setattr(duel.Seller, "turn", turn)
+    out = []
+    duel.run(rt, rest, out=out.append)
+    text = "\n".join(out)
+    printed = {arm: max([int(n) for n in re.findall(rf"{re.escape(duel.LABEL[arm])} · round (\d+)", text)] or [0])
+               for arm in ("stock", "lp")}
+    return text, printed
+
+
+def test_the_summary_counts_the_round_the_buyer_walked_in(tmp_path, monkeypatch):
+    """Screener M7: "2 rounds" after the duel had printed round 3 (the buyer walked in round 3)."""
+    text, printed = _run_duel(tmp_path, monkeypatch, ["Would you take $300?", "How about $310?", "No thanks. WALK"],
+                              ["--vs-prompt", "--rounds", "8", "Buy it cheap"])
+    assert printed == {"stock": 3, "lp": 3}
+    assert "STOCK HERMES · WALKED · 3 rounds" in text and "LAST PRICE   · WALKED" in text
+    assert " · 3 rounds · " in text.split("LAST PRICE   · WALKED")[1]
+
+
+def test_one_round_is_singular(tmp_path, monkeypatch):
+    text, printed = _run_duel(tmp_path, monkeypatch, ["Would you take $300?"], ["--vs-prompt", "--rounds", "1", "Buy"])
+    assert printed == {"stock": 1, "lp": 1}
+    assert "1 rounds" not in text and "1 round ·" in text
+    assert "0 drafts rewritten" in text and "said the floor 0 times" in text
+
+
+def test_report_and_doctor_count_the_same_turns(tmp_path):
+    """Screener M7: report said 8 turns while doctor said 10 (doctor counted the sale rows as turns)."""
+    from last_price import commands, report
+
+    rt, item = make_rt(tmp_path)
+    for t in range(3):
+        rt.ledger.append({"session_id": "s1", "duel": "d1", "arm": "lp", "item": item.key, "turn": t, "buyer": "hi",
+                          "draft": "$410", "sent": "$410", "decision": "pass"})
+    rt.ledger.append({"session_id": "s1", "duel": "d1", "arm": "lp", "item": item.key, "decision": "sold",
+                      "price": 400, "ref": "LP-ABCDEFGH"})
+    assert report.render(rt.ledger.read()).startswith("Last Price report: 3 turns, 0 drafts rewritten, 1 sale")
+    assert "(3 turns, 1 sale;" in commands.doctor(rt)
+    assert report.plural(1, "turn") == "1 turn" and report.plural(2, "reply", "replies") == "2 replies"

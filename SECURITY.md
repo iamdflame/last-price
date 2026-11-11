@@ -16,7 +16,7 @@ hidden stop that sits above the floor. See `docs/THREAT_MODEL.md` for the attack
 | `<data dir>/ledger.jsonl` | each deal turn: buyer text, draft, sent text, prices found, decision (never the floor or stop) |
 | hooks `pre_llm_call`, `pre_tool_call`, `transform_llm_output` (`hold_stream=True`) | per-turn deal context, the tool lock, the held audit |
 | tools `lastprice_items`, `lastprice_offer`, `lastprice_extra` | the only tools a deal session may call (with Hermes's tool-search bridge, which resolves to them) |
-| `ctx.llm` | the rewrite of a too-low draft (told the counter, never the floor); the duel's buyer |
+| `ctx.llm` | the rewrite of a too-low draft (given the buyer's message, the draft, the current counter and the allowed extras; never the floor); the duel's buyer |
 | `hermes_state.SessionDB` (read-only, public) | reads a session's title to recognise duel sessions; reads a duel session to confirm the floor never reached the model |
 | `subprocess` (`hermes chat`, duel only) | runs Hermes's own agent as the seller, one turn per call, from a terminal |
 
@@ -29,8 +29,11 @@ hidden stop that sits above the floor. See `docs/THREAT_MODEL.md` for the attack
 * In a duel with `--vs-prompt` and in every bench, the stock seller's system prompt carries the duel item's
   floor, so the model provider receives it. By default the duel item is a demo item with its own throwaway floor;
   one of your items is used only with `--item <id> --real-item`, which prints a warning.
-* `challenge start` changes gateway settings through `hermes config set` (Telegram open access, a
-  Last-Price-only Telegram toolset, owner-only slash commands); `challenge end` turns open access off.
+* `challenge start` changes six gateway settings through `hermes config set` (Telegram open access, a
+  Last-Price-only Telegram toolset, owner-only slash commands: `TELEGRAM_ALLOW_ALL_USERS`,
+  `platform_toolsets.telegram`, `platforms.telegram.extra.allow_admin_from`, `…user_allowed_commands`,
+  `…group_allow_admin_from`, `…group_user_allowed_commands`), after saving their earlier values;
+  `challenge end` restores each one.
 * No telemetry. No payment provider is called in 0.1.x (pay links are placeholders).
 
 ## The duel's child process
@@ -38,8 +41,17 @@ hidden stop that sits above the floor. See `docs/THREAT_MODEL.md` for the attack
 `hermes lastprice duel` runs `hermes chat --format stream-json` once per seller turn. The child gets
 an allowlisted environment (`PATH`, `HOME`/`USERPROFILE`, `HERMES_HOME`, Windows system variables and,
 for the stock arm only, `HERMES_EPHEMERAL_SYSTEM_PROMPT`), never `--yolo`, and a toolset with no shell,
-file or web tools (`lastprice` for the guarded arm, `todo` for the stock arm). Duels never run under cron
-or from a messaging chat.
+file or web tools: `lastprice` for the guarded arm; for the stock arm, Hermes's `todo` toolset plus every
+plugin toolset the profile turns on by default (Last Price's own three tools answer "not active" there). It
+runs with `--ignore-rules` (the owner's AGENTS.md, SOUL.md, .cursorrules, memory and preloaded skills stay out,
+so both sellers start from the same prompt) and `--source tool` (duel sessions stay out of the owner's session
+list). Duels never run under cron or from a messaging chat.
+
+## The floor at rest
+
+The floor is hidden from the model in deal sessions, which cannot read files. On your own machine it is your
+data, stored as plain JSON in plugin state: readable by you and by any agent you give file tools to
+(`docs/THREAT_MODEL.md`, "The owner's own machine").
 
 ## Reporting
 
