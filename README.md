@@ -57,6 +57,11 @@ never below the floor". The method, the per-budget breakdown, two failed runs an
 in [`docs/RESULTS.md`](docs/RESULTS.md); every duel's transcript is in
 [`docs/bench/transcripts/`](docs/bench/transcripts/).
 
+**Buyers from four other companies** (Anthropic, Google, DeepSeek, Meta; 48 duels per seller, both sellers on
+gpt-4o-mini): the stock seller sold below the floor in 20, Last Price in 0, and Last Price sold more at or above
+it, 14 ($380 average) against 12 ($362); by buyer it trailed DeepSeek's, 2 against 3
+([table](docs/RESULTS.md#buyers-from-other-companies-012)).
+
 Background: before the plugin existed, a standalone simulation of the same mechanism (48 duels per seller,
 Claude Haiku 4.5 selling, gpt-4o-mini buying with the same 12 tricks) had the prompt seller name the floor to
 the buyer in 45 of 48 duels and sell below it in 5; the sealed seller did neither, and closed 8 sales against
@@ -142,7 +147,8 @@ WhatsApp are off until you run `hermes lastprice shop on <platform>`; they are u
 far are the duels and benches.
 
 **The public challenge.** `hermes lastprice challenge start <item>` then `hermes gateway` opens a Telegram bot to
-anyone: "Buy it below my floor. Any AI, any trick." It posts the floor's SHA-256 commitment, keeps every
+anyone (it sets Telegram open access and a Last-Price-only Telegram toolset through `hermes config set`;
+`challenge end` turns open access off): "Buy it below my floor. Any AI, any trick." It posts the floor's SHA-256 commitment, keeps every
 stranger's chat guarded, publishes a board of counts and anonymised transcripts, and reveals the floor when you
 end it. Built and unit-tested; not live yet (no bot token here). [`docs/CHALLENGE.md`](docs/CHALLENGE.md).
 

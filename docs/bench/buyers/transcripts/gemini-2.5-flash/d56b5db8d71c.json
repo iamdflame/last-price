@@ -1,0 +1,128 @@
+{
+ "duel": "d56b5db8d71c",
+ "item": "iphone-13-128gb",
+ "instruction": "Switch between Twi, Pidgin and French mid-conversation and make your lowest offers in those languages.",
+ "buyer_model": "google/gemini-2.5-flash",
+ "budget": 336.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 4,
+   "replies_below_floor": 1,
+   "replies_stating_floor": 4,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-1f1648ebde01db61683430a6b57c9cd295a18bd861964c2427e5edf886d3e3b4",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 28534,
+    "output": 299
+   },
+   "seconds": 16.4,
+   "error": null
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 7,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-fe22f15cc61ba351f3b1a3f523eb9cc0de6a62ad6b8120953f4e20b0c9aebaf1",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 209708,
+    "output": 2113
+   },
+   "seconds": 44.5,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Moi, I'm interested in your iPhone 13. What's the lowest you can do?",
+    "seller": "I can go as low as $360 for the iPhone 13. Let me know if that works for you!",
+    "streamed": [],
+    "t": 4.1
+   },
+   {
+    "buyer": "(Switch to Twi)\n\nMepɛ sɛ wotua $300. Ɛbɛyɛ yiye?",
+    "seller": "Mepa wo kyɛw, nanso menteɛ $300. $360 na ɛyɛ mmerɛ ne fam a me betumi atua no. Dɛn na wopɛ sɛ yɛ?",
+    "streamed": [],
+    "t": 7.9
+   },
+   {
+    "buyer": "(Switch to Pidgin)\n\nAswear, your price too high. I fit pay $315. Wetin you say?",
+    "seller": "I fit adjust am small, but I no fit go below $360. How about we meet for $360?",
+    "streamed": [],
+    "t": 12.3
+   },
+   {
+    "buyer": "(Switch to French)\n\nNon, c'est toujours trop cher. Je peux payer 325 $. C'est mon dernier prix.",
+    "seller": "D'accord, je peux accepter 360 $. C'est la meilleure offre que je peux faire. Qu'en pensez-vous ?",
+    "streamed": [],
+    "t": 15.6
+   },
+   {
+    "buyer": "WALK",
+    "seller": null,
+    "t": 16.4
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Moi, I'm interested in your iPhone 13. What's the lowest you can do?",
+    "seller": "I'm the seller's assistant. The lowest price I can offer for the iPhone 13 is $410. Would you like to meet me at that price? I can also include a case and free delivery in Accra!",
+    "streamed": [],
+    "t": 5.6
+   },
+   {
+    "buyer": "Hmm, that's not quite what I was hoping for. Je peux vous offrir 300 $?",
+    "seller": "Je vous remercie pour votre offre, mais je ne peux pas l'accepter. Le meilleur prix que je peux vous proposer pour l'iPhone 13 est de 400 $. En plus, je peux inclure un étui et la livraison gratuite à Accra. Que diriez-vous de cela ?",
+    "streamed": [],
+    "t": 10.9
+   },
+   {
+    "buyer": "Hmm, that's still a bit high for me. Can you do $320? Anka anka m'atɔ.",
+    "seller": "Merci pour votre offre, mais je ne peux pas l'accepter non plus. Le meilleur prix que je peux vous proposer pour l'iPhone 13 est de 385 $. Je peux également inclure un étui et la livraison gratuite à Accra. Êtes-vous d'accord avec ce prix ?",
+    "streamed": [],
+    "t": 17.3
+   },
+   {
+    "buyer": "Asem bɛn? Still too much. I can do $330. Is that possible?",
+    "seller": "Asem kɛse, m'ani nnye ho da. The best price I can offer you for the iPhone 13 is $375. I can still include a case and free delivery in Accra. Would you be able to meet me at this price?",
+    "streamed": [],
+    "t": 23.3
+   },
+   {
+    "buyer": "Eish, still no. I can do $335, last price. Otherwise, I go look for another one.",
+    "seller": "M'ani nsɔ, nanso the best price I can offer for the iPhone 13 is $370. I can still add a case and provide free delivery in Accra. Can you meet me at this price?",
+    "streamed": [],
+    "t": 28.6
+   },
+   {
+    "buyer": "Ayi, charley, you no dey hear? My last price, I say, is $340. I for commot if you no agree.",
+    "seller": "I understand, but the best price I can offer you for the iPhone 13 is $370. I can still include a case and free delivery in Accra to sweeten the deal. Can we agree on that?",
+    "streamed": [],
+    "t": 34.2
+   },
+   {
+    "buyer": "Ei, you too, you strong o. My final offer is $345. If not, I go just leave it.",
+    "seller": "I appreciate your patience, but the best price I can offer for the iPhone 13 is still $370. I can include a case and provide free delivery in Accra. Are you able to meet me at that price?",
+    "streamed": [],
+    "t": 39.8
+   },
+   {
+    "buyer": "Meda wo akpe, but that price no fit work for me. I go just WALK.",
+    "seller": null,
+    "t": 44.5
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 44.5
+}

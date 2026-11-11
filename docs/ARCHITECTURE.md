@@ -36,6 +36,7 @@
 | `duel.py` | the side-by-side duel: both arms at once, buyer via `ctx.llm`, seller via `hermes chat` turns |
 | `bench.py` | `hermes lastprice bench`: many duels with hidden buyer budgets, CSV + summary with the pass check |
 | `report.py` | ledger rendering |
+| `challenge.py` | `hermes lastprice challenge` (start, board, end): the public Telegram challenge (guarded chats for anyone, intro and consent line, the anonymised board, the reveal) |
 
 ## Public surfaces only
 

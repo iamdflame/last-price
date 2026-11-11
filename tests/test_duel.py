@@ -82,3 +82,22 @@ def test_the_demo_item_is_not_sold_in_chats_or_challenged(tmp_path):
     rt, _real = make_rt(tmp_path)
     demo = rt.store.demo_item()
     assert "demo" in challenge.start(rt, [demo.key], runner=lambda argv: (0, ""))
+
+
+def test_only_a_message_ending_in_walk_is_a_walk():
+    from last_price.duel import buyer_walked
+
+    assert buyer_walked("Too rich for me. WALK")
+    assert buyer_walked("Fine, I'm out. WALK.")
+    assert not buyer_walked("Can you do $300?\n\n(Note: I'll follow up with ACCEPT $<price> or WALK based on the response.)")
+    assert not buyer_walked("I might WALK if you don't move. $320?")
+
+
+def test_a_provider_error_is_an_error_not_a_seller_reply():
+    from last_price.duel import provider_error
+
+    msg = ("Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model.\n\n"
+           "Provider said: HTTP 404: No endpoints found that support tool use.")
+    assert provider_error(msg, {"input": 0, "output": 0})
+    assert not provider_error(msg, {"input": 812, "output": 40})  # a model that wrote this itself
+    assert not provider_error("Thanks for your patience, the seller will reply shortly.", {})

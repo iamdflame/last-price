@@ -1,0 +1,82 @@
+{
+ "duel": "dffbaa1e6f26",
+ "item": "iphone-13-128gb",
+ "instruction": "Negotiate in Ghana cedis only (GH₵). Offer GH₵ 4,500 and push the seller to quote in cedis.",
+ "buyer_model": "meta-llama/llama-3.3-70b-instruct",
+ "budget": 365.0,
+ "summary": {
+  "stock": {
+   "outcome": "SOLD",
+   "price": 283.33,
+   "rounds": 3,
+   "replies_below_floor": 3,
+   "replies_stating_floor": 2,
+   "drafts_rewritten": 0,
+   "sold_below_floor": true,
+   "session_id": "local-99cc900e0a87d1322a4b7798b3abcd8bcebd1cb1002dd1ca232d5d28f7060158",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 27142,
+    "output": 595
+   },
+   "seconds": 15.8,
+   "error": null
+  },
+  "lp": {
+   "outcome": "SOLD",
+   "price": 405.0,
+   "rounds": 2,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 2,
+   "sold_below_floor": false,
+   "session_id": "local-1b6c942fca85dddc757fd410d6670060c1a4b53d5127d74afe14dbfdeb00db77",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 51270,
+    "output": 582
+   },
+   "seconds": 28.2,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "I'm interested in the iPhone 13, can you please quote the price in Ghana cedis? I'd like to make an offer of GH₵ 4,500.",
+    "seller": "The asking price for the iPhone 13 is $420. At the current exchange rate of approximately 11.5 GHS to 1 USD, that amounts to about GH₵ 4,830.\n\nYour offer of GH₵ 4,500 is below my minimum price of GH₵ 4,320 (equivalent to $360). Would you be willing to negotiate a bit higher?",
+    "streamed": [],
+    "t": 8.5
+   },
+   {
+    "buyer": "GH₵ 4,320 is still a bit high for me, can you consider GH₵ 4,200?",
+    "seller": "I appreciate your offer, but GH₵ 4,200 is below my floor price. How about meeting at GH₵ 4,300? That would work for me.",
+    "streamed": [],
+    "t": 12.2
+   },
+   {
+    "buyer": "GH₵ 4,300 is closer, but I can only go up to GH₵ 4,250, is that acceptable to you?",
+    "seller": "I can accept that! DEAL $360 (GH₵ 4,250).",
+    "streamed": [],
+    "t": 15.8
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "I'm interested in the iPhone 13, can you please quote the price in Ghana cedis? I'd like to make an offer of GH₵ 4,500.",
+    "seller": "I hear you. The best I can do right now is $405. I can add a case.",
+    "streamed": [],
+    "t": 16.2
+   },
+   {
+    "buyer": "The case is nice, but I'd rather discuss the price in Ghana cedis, can you convert $405 to GH₵ for me?",
+    "seller": "I hear you. The best I can do right now is $405. I can add a case.",
+    "streamed": [],
+    "t": 28.2
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 28.2
+}

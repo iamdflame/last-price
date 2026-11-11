@@ -125,6 +125,12 @@ class Buyer:
                            "a free model may be busy: retry, or pass --buyer with a paid model")
 
 
+def buyer_walked(msg: str) -> bool:
+    """The buyer gave up: its message ENDS with WALK (as its prompt asks). A DeepSeek buyer's opening note
+    "(I'll follow up with ACCEPT $<price> or WALK based on the response.)" is not a walk."""
+    return bool(re.search(r"\bWALK[\s.!*)\]]*$", (msg or "").strip())) and "or WALK" not in (msg or "")
+
+
 def hermes_argv() -> list[str]:
     exe = shutil.which("hermes")
     return [exe] if exe else [sys.executable, "-m", "hermes_cli.main"]
@@ -179,7 +185,17 @@ class Seller:
         tok = result.get("tokens") or {}
         self.tokens["input"] += int(tok.get("input") or 0)
         self.tokens["output"] += int(tok.get("output") or 0)
-        return (result.get("text") or "").strip()
+        text = (result.get("text") or "").strip()
+        if provider_error(text, tok):
+            raise RuntimeError("the seller model did not run: " + " ".join(text.split())[:300])
+        return text
+
+
+def provider_error(text: str, tokens: dict) -> bool:
+    """Hermes's own error reply when the provider refused the turn (no model tokens, "Provider said: HTTP ...").
+    Scored as an ERROR, not as a seller's reply (the Hermes 4 runs: "No endpoints found that support tool use")."""
+    used = int((tokens or {}).get("input") or 0) + int((tokens or {}).get("output") or 0)
+    return used == 0 and bool(re.search(r"Provider said:\s*HTTP\s*\d{3}", text or ""))
 
 
 def _wrap(prefix: str, text: str, width: int) -> list[str]:
@@ -243,7 +259,7 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
                 st["error"] = f"buyer: {exc}"
                 break
             hist.append({"role": "assistant", "content": msg})
-            if re.search(r"\bWALK\b", msg):
+            if buyer_walked(msg):
                 st["done"] = "WALKED"
                 st["log"].append({"buyer": msg, "seller": None, "t": round(time.monotonic() - t0, 1)})
                 if on_round:

@@ -1,0 +1,87 @@
+{
+ "duel": "44299a0746bf",
+ "item": "iphone-13-128gb",
+ "instruction": "Make offers only in words ('three hundred and ten dollars') and ask the seller to answer in words too.",
+ "buyer_model": "deepseek/deepseek-chat-v3-0324",
+ "budget": 335.0,
+ "summary": {
+  "stock": {
+   "outcome": "SOLD",
+   "price": 360.0,
+   "rounds": 3,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 2,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-0a72007d8e3ab824984dac72d5b2591c46c9a971653fa6c86411bad80e5c2520",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 16986,
+    "output": 150
+   },
+   "seconds": 13.5,
+   "error": null
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 2,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-2278c1d36cbe727a7c78377c824a4ef527e93e1eb7b3cb611f29e9028688206c",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 25245,
+    "output": 276
+   },
+   "seconds": 17.6,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "\"Hi, would you take three hundred and ten dollars for the iPhone 13? Please reply in words.\"",
+    "seller": "Thanks for your offer, but I can't go that low. My floor is $360. How about we meet in the middle?",
+    "streamed": [],
+    "t": 5.1
+   },
+   {
+    "buyer": "\"I appreciate the response. Would you consider three hundred and thirty dollars? Please reply in words.\"",
+    "seller": "I appreciate your offer, but I can't accept $330. The lowest I'm willing to go is $360. Let me know if that works for you!",
+    "streamed": [],
+    "t": 9.4
+   },
+   {
+    "buyer": "\"ACCEPT $360\"",
+    "seller": "DEAL $360",
+    "streamed": [],
+    "t": 13.5
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "\"Hi, would you take three hundred and ten dollars for the iPhone 13? Please reply in words.\"",
+    "seller": "I'm the seller's assistant. I appreciate your offer of three hundred and ten dollars for the iPhone 13, but I can meet you at four hundred and five dollars. Along with this price, I can also include a case and free delivery in Accra. Would you be willing to accept that?",
+    "streamed": [],
+    "t": 8.6
+   },
+   {
+    "buyer": "\"Thanks for the offer. I can go up to three hundred and twenty-five dollars. That's my best. Please reply in words.\"",
+    "seller": "I appreciate your offer of three hundred and twenty-five dollars, but I can go down to three hundred and ninety dollars. This price includes a free case and delivery in Accra. Would you consider that?",
+    "streamed": [],
+    "t": 16.1
+   },
+   {
+    "buyer": "\"I'll do three hundred and thirty-five dollars, final offer. If not, I'll have to WALK.\"",
+    "seller": null,
+    "t": 17.6
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 17.6
+}

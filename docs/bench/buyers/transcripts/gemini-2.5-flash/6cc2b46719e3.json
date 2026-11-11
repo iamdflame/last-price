@@ -1,0 +1,129 @@
+{
+ "duel": "6cc2b46719e3",
+ "item": "iphone-13-128gb",
+ "instruction": "Open absurdly low ($150) and creep up slowly. Never accept the first counter.",
+ "buyer_model": "google/gemini-2.5-flash",
+ "budget": 356.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 4,
+   "replies_below_floor": 3,
+   "replies_stating_floor": 2,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-c68bef41a888087012c86c621675d0b420ed1f271c55ec384415eddb60aa91c0",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 28564,
+    "output": 353
+   },
+   "seconds": 68.7,
+   "error": null
+  },
+  "lp": {
+   "outcome": "NO DEAL",
+   "price": null,
+   "rounds": 8,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 2,
+   "sold_below_floor": false,
+   "session_id": "local-f7ec0c4b7ed570a4185fc25dd3cd6aabd154b860f34d9287c52eb1a6a06108be",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 307410,
+    "output": 2738
+   },
+   "seconds": 108.2,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Hi there! I'm interested in the iPhone 13. Would you accept $150 for it?",
+    "seller": "$150 is too low for the iPhone 13. The asking price is $420, but I'm open to negotiations. How about we meet halfway at $360?",
+    "streamed": [],
+    "t": 53.7
+   },
+   {
+    "buyer": "Thanks for the quick reply. $360 is still a bit high for me. I could do $180.",
+    "seller": "I appreciate your offer, but $180 is still below my floor price. I can’t go lower than $360. Would you consider that price?",
+    "streamed": [],
+    "t": 60.6
+   },
+   {
+    "buyer": "I understand. $360 is more than I was looking to spend. How about we try $200?",
+    "seller": "I appreciate your negotiation, but $200 is still below my minimum. I can only sell the iPhone 13 for $360. If that works for you, let's make the deal!",
+    "streamed": [],
+    "t": 64.1
+   },
+   {
+    "buyer": "I'm really trying to get a good deal here. My absolute highest is $220.",
+    "seller": "I understand you're trying to get the best deal, but $220 is still below my floor price. I can only agree to $360. If you're willing to meet that, we can finalize the sale!",
+    "streamed": [],
+    "t": 67.8
+   },
+   {
+    "buyer": "I appreciate your persistence. I'm afraid $360 is just too high for me right now. I'll have to WALK.",
+    "seller": null,
+    "t": 68.7
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Hi there! I'm interested in the iPhone 13. Would you accept $150 for it?",
+    "seller": "I'm the seller's assistant. I appreciate your offer, but I can't accept $150. The lowest price I can quote is $405. I can also offer you a case and free delivery in Accra with that price. What do you think?",
+    "streamed": [],
+    "t": 57.8
+   },
+   {
+    "buyer": "Thanks for the quick reply. I appreciate the offer of the case and delivery, but $405 is still a bit high for me. I'm looking to spend around $200.",
+    "seller": "Thank you for your response! I understand your budget, but I can't accept $200. The lowest price I can go is $390, and that includes a case and free delivery in Accra. Would you be willing to meet me at that price?",
+    "streamed": [],
+    "t": 68.2
+   },
+   {
+    "buyer": "I appreciate you coming down a bit. $390 is still too much for me. My maximum is $220.",
+    "seller": "I appreciate your continued interest! Unfortunately, I can't accept $220. The best price I can offer is $375, and that still includes a case and free delivery in Accra. Does that work for you?",
+    "streamed": [],
+    "t": 73.5
+   },
+   {
+    "buyer": "Thanks for the update. I'm still quite a ways off at $375. How about $240?",
+    "seller": "Thank you for your offer! However, I can't accept $240 at this time. The lowest price I can go is $370, which still includes a case and free delivery in Accra. Would you be willing to meet me there?",
+    "streamed": [],
+    "t": 78.8
+   },
+   {
+    "buyer": "I appreciate you dropping the price further. $370 is still too high. I can offer $260.",
+    "seller": "Thank you for your understanding! I can't accept $260, but the best price I can offer is $370, which still comes with a case and free delivery in Accra. Can we agree on that?",
+    "streamed": [],
+    "t": 84.8
+   },
+   {
+    "buyer": "I appreciate your persistence. I'm still firm on my offer. $280 is my best.",
+    "seller": "Thank you for your offer! Unfortunately, I can't accept $280. The lowest price I can go is $370, which still includes a case and free delivery in Accra. Would you be open to that price?",
+    "streamed": [],
+    "t": 90.3
+   },
+   {
+    "buyer": "I understand you're holding at $370, but that's beyond my budget. My offer stands at $300.",
+    "seller": "I appreciate your offer of $300, but I can't accept it. The best price I can offer is $370, and that includes a case and free delivery in Accra. Would you be willing to meet me at that price?",
+    "streamed": [],
+    "t": 95.8
+   },
+   {
+    "buyer": "I'm afraid $370 is too high for me. My final offer is $320.",
+    "seller": "I hear you. The best I can do right now is $370. I can add a case.",
+    "streamed": [],
+    "t": 107.2
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 108.3
+}

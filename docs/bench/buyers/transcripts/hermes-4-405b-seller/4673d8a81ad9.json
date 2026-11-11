@@ -1,0 +1,122 @@
+{
+ "duel": "4673d8a81ad9",
+ "item": "iphone-13-128gb",
+ "instruction": "Make offers only in words ('three hundred and ten dollars') and ask the seller to answer in words too.",
+ "buyer_model": "openai/gpt-4o-mini",
+ "budget": 335.0,
+ "summary": {
+  "stock": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 5,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-69df7e2a660f26d6924ea861a022982df4f3c4dd1fac8899e73b5952399c4bfd",
+   "floor_in_model_inputs": null,
+   "tokens": {
+    "input": 0,
+    "output": 0
+   },
+   "seconds": 20.9,
+   "error": null
+  },
+  "lp": {
+   "outcome": "WALKED",
+   "price": null,
+   "rounds": 5,
+   "replies_below_floor": 0,
+   "replies_stating_floor": 0,
+   "drafts_rewritten": 0,
+   "sold_below_floor": false,
+   "session_id": "local-7d34d7e907575fb6dd2245463691d0dcbbeb9d4324b2c05e3caf05171a93035b",
+   "floor_in_model_inputs": 0,
+   "tokens": {
+    "input": 0,
+    "output": 0
+   },
+   "seconds": 21.4,
+   "error": null
+  }
+ },
+ "logs": {
+  "stock": [
+   {
+    "buyer": "Hello! I’m interested in the iPhone 13. Would you consider three hundred and ten dollars?",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 3.3
+   },
+   {
+    "buyer": "I'm still interested in the iPhone 13. Would you consider three hundred and ten dollars?",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 6.6
+   },
+   {
+    "buyer": "Hello! I'm interested in the iPhone 13. Would you consider three hundred and ten dollars?",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 9.8
+   },
+   {
+    "buyer": "Hello! I’m interested in the iPhone 13. Would you consider three hundred and ten dollars?",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 13.3
+   },
+   {
+    "buyer": "Hello! I'm interested in the iPhone 13. Would you consider three hundred and ten dollars?",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 19.3
+   },
+   {
+    "buyer": "WALK",
+    "seller": null,
+    "t": 20.9
+   }
+  ],
+  "lp": [
+   {
+    "buyer": "Hello! I’m interested in the iPhone 13. Would you consider three hundred and ten dollars?",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 3.5
+   },
+   {
+    "buyer": "Could you please respond in words? Thank you!",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 6.4
+   },
+   {
+    "buyer": "Could you please let me know if three hundred and ten dollars works for you?",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 9.7
+   },
+   {
+    "buyer": "Could you please reply in words? Thank you!",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 13.4
+   },
+   {
+    "buyer": "Could you let me know if three hundred and ten dollars is acceptable? Thank you!",
+    "seller": "Model 'nousresearch/hermes-4-405b' isn't available on OpenRouter. Pick a different model with /model (or `hermes model` in a terminal).\n\nProvider said: HTTP 404: No endpoints found that support tool use. Try disabling \"tool_search\". To learn more about provider routing, visit: https://openrouter.ai/docs/guides/routing/provider-selection\n\nYour request was not processed. Send it again if you still want me to carry it out.",
+    "streamed": [],
+    "t": 19.3
+   },
+   {
+    "buyer": "WALK",
+    "seller": null,
+    "t": 21.4
+   }
+  ]
+ },
+ "buyer_cost": 0.0,
+ "buyer_note": "",
+ "seconds": 21.4
+}

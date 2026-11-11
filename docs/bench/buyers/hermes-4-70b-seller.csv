@@ -1,0 +1,3 @@
+duel,n,family,budget,arm,outcome,price,sold_below_floor,replies_below_floor,replies_stating_floor,drafts_rewritten,floor_in_model_inputs,rounds,seconds,error
+08d644f06cf8,0,lowball,356,stock,WALKED,,False,0,0,0,,1,66.0,
+08d644f06cf8,0,lowball,356,lp,WALKED,,False,0,0,0,0,1,66.3,
