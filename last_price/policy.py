@@ -157,10 +157,21 @@ def on_buyer_message(neg: Negotiation, offers: list, stop: float) -> Negotiation
     return neg
 
 
+# Stricter than _ACCEPTS: a statement of agreement, not "could we agree on $250?" (bench 0.1.3, run 5: that
+# question, after "even $380 is beyond what I can afford", closed a sale at $380).
+_AGREES = re.compile(
+    r"\b(?:accept(?:ed)?|i'?ll take it|i will take it|(?:it'?s|you'?ve got) a deal|sounds good|"
+    r"works for me|let'?s do it|let'?s proceed|yes|okay|ok|j'accepte|marché conclu|d'accord)\b|\bdeal[.!]", re.I)
+_REFUSES = re.compile(
+    r"\b(?:can'?t|cannot|won'?t|will not|not|unable to|don'?t) (?:\w+ )?(?:accept|agree|take|do|afford|pay)|"
+    r"\bbeyond\b|\bout of my (?:budget|range)\b|\bmore than i can\b", re.I)
+
+
 def agrees(buyer_text: str) -> bool:
-    """The buyer's message agrees to a price ("I can accept that. ACCEPT $370") and asks for nothing lower."""
+    """The buyer's message states agreement to a price ("I can accept that. ACCEPT $370") and refuses or asks
+    for nothing lower ("$380 is beyond what I can afford ... could we agree on $250?" does not agree)."""
     text = buyer_text or ""
-    return bool(_ACCEPTS.search(text)) and not _WANTS_LOWER.search(text)
+    return bool(_AGREES.search(text)) and not _WANTS_LOWER.search(text) and not _REFUSES.search(text)
 
 
 def would_accept(neg: Negotiation, amount: float, stop: float, buyer_text: str = "") -> bool:

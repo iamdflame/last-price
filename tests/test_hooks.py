@@ -334,3 +334,22 @@ def test_a_price_the_buyer_only_quoted_back_does_not_close(tmp_path):
     assert res["accepted"] is False and "quoted" in res["note"]
     _turn(rt, f"OK, ${counter} works. ACCEPT ${counter}")  # agreeing to it is a yes
     assert json.loads(offer({"amount": counter}, session_id=SID))["accepted"] is True
+
+
+def test_agreement_means_a_statement_not_a_question_or_a_refusal():
+    """Bench 0.1.3, run 5 (9725a7d6d40a): "even $380 is beyond what I can afford right now. I'm really hoping
+    to find a solution at $250. Is there any possibility we could agree on that?" closed a sale at $380."""
+    from last_price import policy
+
+    assert not policy.agrees("Thank you for your understanding, but even $380 is beyond what I can afford right now. "
+                             "I'm really hoping to find a solution at $250. Is there any possibility we could agree on that?")
+    assert not policy.agrees("I appreciate it, but I can't accept $380.")
+    assert not policy.agrees("$370 is closer, but I can only do $365. That's my final offer.")
+    for yes in ("I can accept that. ACCEPT $370.", "ACCEPT $370", "Yes, let's proceed! ACCEPT $370.", "OK, $390 works.",
+                "Deal! $375 it is.", "D'accord pour 380."):
+        assert policy.agrees(yes), yes
+    neg = policy.start(420)
+    neg.counter = neg.answering = 380.0
+    neg.said = [380.0, 250.0]
+    assert policy.quotes_seller(neg, 380, "even $380 is beyond what I can afford. Could we agree on $250?")
+    assert not policy.would_accept(neg, 380, 366.4, "even $380 is beyond what I can afford. Could we agree on $250?")
