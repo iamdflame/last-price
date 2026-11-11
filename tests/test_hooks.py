@@ -183,3 +183,15 @@ def test_the_two_arms_write_their_own_records(tmp_path):
     rt.store.save_duel(stale)  # an old copy written back keeps both arm records
     d = rt.store.duel(rec["id"])
     assert d["arms"]["lp"]["sale"]["price"] == 380.0 and d["arms"]["stock"]["session_id"] == "s-stock"
+
+
+def test_no_file_code_or_web_tool_runs_in_a_deal_session(tmp_path):
+    # Cold judge M4: "the page never says Hermes's own terminal tool can't read the sealed floor off disk".
+    rt, item = make_rt(tmp_path)
+    open_duel(rt, item)
+    _turn(rt, "Would you take $300?", first=True)
+    _pre_llm, pre_tool, _tr = make_hooks(rt)
+    for name in ("terminal", "read_file", "write_file", "patch", "search_files", "execute_code",
+                 "web_search", "web_extract", "browser_exec", "memory", "delegate_task", "skill_view"):
+        out = pre_tool(tool_name=name, args={"path": "state.json", "command": "type state.json"}, session_id=SID)
+        assert out is not None and out["action"] == "block", name

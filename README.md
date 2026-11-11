@@ -1,6 +1,6 @@
 # Last Price
 
-**Hermes haggles with your buyers in WhatsApp and Telegram, and closes above a floor its own model never sees.**
+**Hermes haggles with your buyers in chat, and closes above a floor its own model never sees.**
 
 <p align="center">
   <picture>
@@ -114,7 +114,8 @@ Your floor stays in Last Price's plugin state under your Hermes home and goes to
 prompt or transcript. Set floors with `hermes lastprice sell` in a terminal: `/lastprice sell` works in a chat
 you own, but the command text then passes through that chat's platform and Hermes's local admission record
 ([threat model](docs/THREAT_MODEL.md)). Never paste a floor into a normal chat. In buyers' chats, Hermes can use
-only Last Price's three tools (`lastprice_items`, `lastprice_offer`, `lastprice_extra`); `lastprice_offer`
+only Last Price's three tools (`lastprice_items`, `lastprice_offer`, `lastprice_extra`): no terminal, file, code or
+web tool runs in a deal session, so nothing a buyer says can make Hermes read the floor off disk. `lastprice_offer`
 accepts only a price the buyer actually wrote, and only the plugin closes a sale. Every reply to a buyer is
 held and checked; one that offers less than the line is rewritten by your own model (told only the current
 counter) or by a template, and if the check itself fails the buyer gets a short holding message, so replies in
