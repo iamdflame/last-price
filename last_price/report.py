@@ -33,7 +33,7 @@ def render(rows: list[dict], *, duel: Optional[str] = None, last: int = 12, widt
             out.append(_wrap(r.get("draft", ""), width, "  draft: "))
         out.append(_wrap(r.get("sent", ""), width, "  sent:  "))
         if r.get("prices_found"):
-            out.append(f"  prices found in the draft: {', '.join(str(p) for p in r['prices_found'])}")
+            out.append(f"  prices found in the draft: {', '.join(f'{float(p):g}' for p in r['prices_found'])}")
     for s in sales[-5:]:
-        out.append(f"SOLD {s.get('item')} at {s.get('price')} (ref {s.get('ref')}, {s.get('arm', '')})")
+        out.append(f"SOLD {s.get('item')} at {float(s.get('price') or 0):g} (ref {s.get('ref')}, {s.get('arm', '')})")
     return "\n".join(out)
