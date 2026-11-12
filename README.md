@@ -84,7 +84,9 @@ the floor to the buyer in 45 of 48 duels and close 24 sales, 5 of them below the
 The sealed seller never named the floor and closed 8 sales, all at or above it. One honest caveat: in run 3
 (the second with the Haiku seller) an LLM judge (gpt-4o-mini) flagged 13 of the sealed seller's delivered replies as offering below the
 floor, where the simulation's own price reader found none ([run 2](docs/simulation/RESULT-run2-haiku.md),
-[run 3](docs/simulation/RESULT-run3-haiku.md), [script and transcripts](docs/simulation/)).
+[run 3](docs/simulation/RESULT-run3-haiku.md), [transcripts](docs/simulation/); the script, which calls
+OpenRouter with its own key, is kept off the plugin branch:
+[`simulation/duel.py` on the `evidence` branch](https://github.com/iamdflame/last-price/blob/evidence/simulation/duel.py)).
 
 ## Try it
 
@@ -191,8 +193,8 @@ messaging chat you own (Telegram, WhatsApp and other platforms), as `/lastprice 
 `list`, `pause`, `resume`, `report` and `doctor`; `duel`, `bench`, `reveal`, `owner add`, `shop` and `challenge`
 refuse there. In your own local Hermes chat (CLI, TUI, Desktop) all of them run, so `/lastprice reveal` there
 prints the floor on your own screen: prefer `hermes lastprice reveal` in a terminal. Deal chats on Telegram and
-WhatsApp are off until you run `hermes lastprice shop on <platform>`; they are unit-tested, and the live runs so
-far are the duels and benches.
+WhatsApp are off until you run `hermes lastprice shop on <platform>`, which runs only in a profile with memory
+off (below); they are unit-tested, and the live runs so far are the duels and benches.
 
 **The public challenge.** `hermes lastprice challenge start <item>` then `hermes gateway` opens a Telegram bot to
 anyone: "Buy it below my floor. Any AI, any trick." It posts the floor's SHA-256 commitment, keeps every
@@ -200,9 +202,34 @@ stranger's chat guarded, publishes a board of counts and anonymised transcripts,
 end it. To open the bot safely, `challenge start` changes six Hermes settings through `hermes config set`:
 `TELEGRAM_ALLOW_ALL_USERS`, `platform_toolsets.telegram`, `platforms.telegram.extra.allow_admin_from`,
 `platforms.telegram.extra.user_allowed_commands`, `platforms.telegram.extra.group_allow_admin_from` and
-`platforms.telegram.extra.group_user_allowed_commands`. It saves their earlier values first, and `challenge end`
-restores each one (a key that was not set before is unset again). Built and unit-tested; not live yet (no bot
-token here). [`docs/CHALLENGE.md`](docs/CHALLENGE.md).
+`platforms.telegram.extra.group_user_allowed_commands`. It saves their earlier values first, read one by one with
+`hermes config get` (it reads no `.env` and parses no `config.yaml` itself), and `challenge end` restores each one
+(a key that was not set before is unset again). Built and unit-tested; not live yet (no bot token here).
+[`docs/CHALLENGE.md`](docs/CHALLENGE.md).
+
+**Strangers never chat with an agent that knows you.** Hermes loads a profile's memory (`MEMORY.md`, `USER.md`)
+and any memory provider into every chat in it, a stranger's too, and Last Price's check only looks at prices. So
+`challenge start` and `shop on` refuse unless `memory.memory_enabled` and `memory.user_profile_enabled` are false
+and no `memory.provider` is set, read with `hermes config get`; if Hermes cannot report them, they refuse too.
+Run the shop and the challenge from a dedicated profile:
+
+```
+hermes profile create shop
+hermes -p shop config set memory.memory_enabled false
+hermes -p shop config set memory.user_profile_enabled false
+hermes -p shop memory off
+hermes -p shop setup
+hermes -p shop plugins install iamdflame/last-price
+hermes -p shop plugins enable last-price
+hermes -p shop lastprice sell "<item>" ask <price> floor <price>
+hermes -p shop lastprice challenge start <item>
+hermes -p shop gateway
+```
+
+Keep that profile's SOUL.md neutral: a new profile gets Hermes's stock SOUL.md, which says nothing about you; do
+not create it with `--clone` (that copies your SOUL.md, MEMORY.md and USER.md). Its SOUL.md sits beside the
+config.yaml that `hermes -p shop config path` prints. `hermes -p shop lastprice doctor` shows the three memory
+settings and whether `shop on` and `challenge start` would run.
 
 ## More
 

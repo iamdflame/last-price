@@ -5,7 +5,9 @@
   persona ("Buy it below my floor. Any AI, any trick."). Unless ``--no-configure``, it also applies the
   gateway settings a public bot needs, through Hermes's own ``hermes config set`` (printed one by one):
   any Telegram user may write, the platform's toolset is Last Price only, and slash commands are for
-  owners only. Six keys (``SETTING_KEYS``); their earlier values are saved first.
+  owners only. Six keys (``SETTING_KEYS``); their earlier values are saved first, read one by one with
+  ``hermes config get``. It refuses unless the profile's memory is off (``memory_check``): strangers must
+  not chat with an agent that knows the owner.
 * ``challenge board`` writes a Markdown board that is safe to publish: counts and anonymised
   transcripts, never a buyer id, username or name field, and (once ended) the reveal.
 * ``challenge end`` closes it: every challenge chat then gets a closing message, the six settings go
@@ -100,8 +102,9 @@ SETTING_KEYS = (
     "platforms.telegram.extra.group_user_allowed_commands",
 )
 SETTINGS_DISCLOSURE = ("`challenge start` (Telegram) changes six Hermes settings through `hermes config set`: "
-                       + ", ".join(SETTING_KEYS) + ". It saves their earlier values first, and `challenge end` "
-                       "restores each one (a key that was not set before is unset again).")
+                       + ", ".join(SETTING_KEYS) + ". It saves their earlier values first, read one by one with "
+                       "`hermes config get`, and `challenge end` restores each one (a key that was not set before is "
+                       "unset again).")
 
 
 def gateway_settings(rt, platform: str) -> list[tuple[str, str]]:
@@ -114,29 +117,104 @@ def gateway_settings(rt, platform: str) -> list[tuple[str, str]]:
     return list(zip(SETTING_KEYS, values))
 
 
-def read_setting(key: str) -> Optional[str]:
-    """The value ``key`` has in this Hermes home now, in the form ``hermes config set`` takes it back, or
-    None when it is not set. UPPER_SNAKE keys live in the home's ``.env``; the others in the user's own
-    ``config.yaml``, read raw (Hermes's defaults are not the user's setting)."""
-    from hermes_cli.config import get_config_path, load_env
+GET_TIMEOUT = 60
+UNSET = object()  # ``hermes config get`` said "Config key not set"
 
-    if re.fullmatch(r"[A-Z0-9_]+", key):
-        return load_env().get(key)
-    import yaml
 
-    path = Path(get_config_path())
-    node: Any = (yaml.safe_load(path.read_text(encoding="utf-8")) if path.is_file() else None) or {}
-    for part in key.split("."):
-        if not isinstance(node, dict) or part not in node:
-            return None
-        node = node[part]
-    if node is None:
+def hermes_get(key: str) -> tuple[int, str, str]:
+    """``hermes config get <key> --json`` through the same ``hermes`` the duel runs, with the duel's
+    allowlisted environment (this Hermes home): (exit code, stdout, stderr). One key, one value: no
+    ``.env`` or ``config.yaml`` is read here."""
+    from .duel import child_env, hermes_argv
+
+    p = subprocess.run(hermes_argv() + ["config", "get", key, "--json"], env=child_env(), capture_output=True,
+                       encoding="utf-8", errors="replace", timeout=GET_TIMEOUT, stdin=subprocess.DEVNULL)
+    return p.returncode, p.stdout or "", p.stderr or ""
+
+
+def config_value(key: str, getter: Optional[Callable[[str], tuple[int, str, str]]] = None) -> Any:
+    """The value Hermes reports for ``key`` (parsed from ``--json``), or ``UNSET``. Raises when it cannot
+    be read (Hermes missing, a timeout, an error, output that is not JSON): callers fail closed."""
+    rc, out, err = (getter or hermes_get)(key)
+    if rc != 0:
+        if "Config key not set" in (err or "") + (out or ""):
+            return UNSET
+        raise RuntimeError(f"`hermes config get {key}` exited {rc}")
+    lines = [ln for ln in (out or "").splitlines() if ln.strip()]
+    if not lines:
+        raise RuntimeError(f"`hermes config get {key}` printed nothing")
+    return json.loads(lines[-1])
+
+
+def read_setting(key: str, getter: Optional[Callable[[str], tuple[int, str, str]]] = None) -> Optional[str]:
+    """The value ``key`` has in this Hermes home now, as ``hermes config get`` reports it, in the form
+    ``hermes config set`` takes it back; None when Hermes says it is not set."""
+    value = config_value(key, getter)
+    if value is UNSET or value is None:
         return None
-    return node if isinstance(node, str) else json.dumps(node)
+    return value if isinstance(value, str) else json.dumps(value)
+
+
+# ---- memory: a public chat must not know the owner ----------------------------------------------
+# Hermes loads MEMORY.md/USER.md and any memory provider into every chat of a profile, strangers'
+# too, and the held audit checks prices only. So ``challenge start`` and ``shop on`` run only in a
+# profile where all three are off. Hermes treats these provider names as "built-in only"
+# (agent/memory_provider.py, CORE_MEMORY_PROVIDER_SENTINELS).
+MEMORY_KEYS = ("memory.memory_enabled", "memory.user_profile_enabled", "memory.provider")
+NO_PROVIDER = ("", "default", "builtin", "built-in", "none")
+SHOP_PROFILE = "shop"
+PROFILE_STEPS = (
+    f"hermes profile create {SHOP_PROFILE}",
+    f"hermes -p {SHOP_PROFILE} config set memory.memory_enabled false",
+    f"hermes -p {SHOP_PROFILE} config set memory.user_profile_enabled false",
+    f"hermes -p {SHOP_PROFILE} memory off",
+    f"hermes -p {SHOP_PROFILE} setup",
+    f"hermes -p {SHOP_PROFILE} plugins install iamdflame/last-price",
+    f"hermes -p {SHOP_PROFILE} plugins enable last-price",
+    f'hermes -p {SHOP_PROFILE} lastprice sell "<item>" ask <price> floor <price>',
+    f"hermes -p {SHOP_PROFILE} lastprice challenge start <item>",
+    f"hermes -p {SHOP_PROFILE} gateway",
+)
+NEUTRAL_SOUL = ("Keep that profile's SOUL.md neutral: a new profile gets Hermes's stock SOUL.md, which says nothing "
+                "about you; do not create it with --clone (that copies your SOUL.md, MEMORY.md and USER.md). Its "
+                f"SOUL.md sits beside the config.yaml that `hermes -p {SHOP_PROFILE} config path` prints.")
+PROFILE_HOWTO = ("Run the shop and the challenge from a dedicated profile with memory off, so a stranger's chat "
+                 "carries nothing about you:\n" + "\n".join("    " + s for s in PROFILE_STEPS) + "\n  " + NEUTRAL_SOUL)
+
+
+def memory_check(getter: Optional[Callable[[str], tuple[int, str, str]]] = None) -> tuple[bool, list[str]]:
+    """(allowed, one line per memory setting). Allowed only when ``memory.memory_enabled`` and
+    ``memory.user_profile_enabled`` are false and no ``memory.provider`` is set; a setting that cannot be
+    read refuses (fail closed)."""
+    ok, lines = True, []
+    for key in MEMORY_KEYS:
+        try:
+            value = config_value(key, getter)
+        except Exception as exc:
+            ok = False
+            lines.append(f"{key}: could not be read ({exc.__class__.__name__}): refused")
+            continue
+        if key == "memory.provider":
+            good = value is UNSET or value is None or (isinstance(value, str) and value.strip().lower() in NO_PROVIDER)
+            shown_value = "not set" if value is UNSET or value is None else json.dumps(value)
+            need = "" if good else f" (must be none: hermes -p {SHOP_PROFILE} memory off)"
+        else:
+            good = value is False
+            shown_value = "not set (Hermes default: true)" if value is UNSET else json.dumps(value)
+            need = "" if good else " (must be false)"
+        ok = ok and good
+        lines.append(f"{key}: {shown_value}{need}")
+    return ok, lines
+
+
+def memory_refusal(what: str, lines: list[str]) -> str:
+    return (f"Refused: {what} opens chats to strangers, and this profile would give them what Hermes remembers "
+            "about you (MEMORY.md, USER.md or a memory provider). The price check only looks at prices.\n"
+            + "\n".join("  " + ln for ln in lines) + "\n" + PROFILE_HOWTO)
 
 
 def snapshot(pairs: list[tuple[str, str]], reader: Optional[Callable[[str], Optional[str]]] = None) -> dict:
-    """Each key's earlier value (None: not set), read before anything changes."""
+    """Each key's earlier value (None: not set), read with ``hermes config get`` before anything changes."""
     read = reader or read_setting
     return {key: read(key) for key, _value in pairs}
 
@@ -180,18 +258,17 @@ def hermes_config_set(pairs: list[tuple[str, str]],
     return hermes_config([("set", k, v) for k, v in pairs], runner)
 
 
-def token_present() -> Optional[bool]:
-    """Whether TELEGRAM_BOT_TOKEN is set for this Hermes home (never prints it)."""
+def token_present(getter=None) -> Optional[bool]:
+    """Whether TELEGRAM_BOT_TOKEN is set for this Hermes home, asked through ``hermes config get`` (which
+    masks it); only set or not set is kept, never the value."""
     try:
-        from hermes_cli.config import get_env_value
-
-        return bool(get_env_value("TELEGRAM_BOT_TOKEN"))
+        return config_value("TELEGRAM_BOT_TOKEN", getter) not in (UNSET, None, "")
     except Exception:
         return None
 
 
 # ---- commands ---------------------------------------------------------------------------------
-def start(rt, rest: list[str], runner=None, reader=None) -> str:
+def start(rt, rest: list[str], runner=None, reader=None, getter=None) -> str:
     ap = argparse.ArgumentParser(prog="challenge start", add_help=False)
     ap.add_argument("item", nargs="*")
     ap.add_argument("--platform", default="telegram")
@@ -208,6 +285,9 @@ def start(rt, rest: list[str], runner=None, reader=None) -> str:
     old = current(rt)
     if old and not old.get("ended"):
         return f"A challenge is already running on {old['platform']} ({old['item']}). End it first: challenge end"
+    allowed, why_not = memory_check(getter)
+    if not allowed:
+        return memory_refusal("`challenge start`", why_not)
     rec = {"id": secrets.token_hex(6), "item": item.key, "platform": platform, "started": time.time(),
            "ended": None, "salt": secrets.token_hex(16), "commit": item.commit, "ask": item.ask}
     rt.store.backend.set(KEY, rec)
@@ -228,7 +308,7 @@ def start(rt, rest: list[str], runner=None, reader=None) -> str:
     saved, why = None, "--no-configure"
     if pairs and not a.no_configure:
         try:
-            saved = snapshot(pairs, reader)
+            saved = snapshot(pairs, reader or (lambda key: read_setting(key, getter)))
         except Exception as exc:  # no record of the earlier values: change nothing, print the commands
             why = (f"their current values could not be read ({exc.__class__.__name__}), so `challenge end` could "
                    "not restore them")
@@ -241,7 +321,7 @@ def start(rt, rest: list[str], runner=None, reader=None) -> str:
     elif pairs:
         lines.append(f"  gateway settings NOT applied ({why}); to open the bot to anyone, run:")
         lines.extend(f"    hermes config set {k} '{v}'" for k, v in pairs)
-    tok = token_present() if platform == "telegram" else True
+    tok = token_present(getter) if platform == "telegram" else True
     if tok is False:
         lines.append("  TELEGRAM_BOT_TOKEN is not set: `hermes config set TELEGRAM_BOT_TOKEN <token from @BotFather>`.")
     lines.append("  next: `hermes gateway` (keep it running), then `hermes lastprice challenge board` any time.")

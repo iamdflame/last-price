@@ -172,6 +172,10 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
             if len(rest) == 2 and rest[0] in ("on", "off") and re.fullmatch(r"[a-z0-9_]+", rest[1]):
                 if not local:
                     return "Change shop platforms from a terminal."
+                if rest[0] == "on":
+                    allowed, why_not = challenge.memory_check()
+                    if not allowed:
+                        return challenge.memory_refusal("`shop on`", why_not)
                 plats = set(rt.store.backend.get("shop_platforms", []) or [])
                 (plats.add if rest[0] == "on" else plats.discard)(rest[1])
                 rt.store.backend.set("shop_platforms", sorted(plats))
@@ -295,6 +299,10 @@ def doctor(rt: Runtime) -> str:
     lines.append("  hosts contacted: " + "; ".join(hosts) + ". Nothing else: no telemetry, no payment provider.")
     lines.append(f"  owners: {', '.join(rt.store.owners()) or 'local terminal only'}")
     lines.append(f"  shop platforms: {', '.join(rt.store.backend.get('shop_platforms', []) or []) or 'none (duels only)'}")
+    allowed, mem = challenge.memory_check()
+    lines.append("  memory (strangers' chats must carry nothing about you): " + " · ".join(mem))
+    lines.append(f"    `shop on` and `challenge start`: {'allowed' if allowed else 'REFUSED in this profile'}. "
+                 + challenge.PROFILE_HOWTO.replace("\n", "\n  "))
     rec = challenge.current(rt)
     if rec:
         lines.append(f"  challenge: {rec['id']} on {rec['platform']} ({'ended' if rec.get('ended') else 'LIVE'}), item "

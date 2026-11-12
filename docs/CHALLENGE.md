@@ -8,15 +8,40 @@ are revealed when the owner ends the challenge, so anyone can check that the flo
 Telegram bot token exists on the maintainer's machine yet, so no stranger has played. When it goes live,
 the board will be published at `docs/challenge/board.md`.
 
-## Start it: two commands
+## A dedicated profile with memory off
 
-Once, in a dedicated Hermes home (a profile used for nothing else), with a model set and the plugin enabled
-(README, "Try it"), a listed item, and the bot token from [@BotFather](https://t.me/BotFather) saved with
-`hermes config set TELEGRAM_BOT_TOKEN <token>` (Hermes keeps it in that home's `.env`):
+Hermes loads a profile's memory (`MEMORY.md`, `USER.md`) and any memory provider into every chat in it, a
+stranger's too, and Last Price's check only looks at prices. So `challenge start` (and `shop on`) refuse unless
+`memory.memory_enabled` and `memory.user_profile_enabled` are false and no `memory.provider` is set. It reads them
+with `hermes config get`; if Hermes cannot report one, it refuses. Make a profile used for nothing else:
 
 ```
-hermes lastprice challenge start iphone-13-128gb
-hermes gateway
+hermes profile create shop
+hermes -p shop config set memory.memory_enabled false
+hermes -p shop config set memory.user_profile_enabled false
+hermes -p shop memory off
+hermes -p shop setup
+hermes -p shop plugins install iamdflame/last-price
+hermes -p shop plugins enable last-price
+hermes -p shop lastprice sell "<item>" ask <price> floor <price>
+hermes -p shop lastprice challenge start <item>
+hermes -p shop gateway
+```
+
+Keep its SOUL.md neutral: a new profile gets Hermes's stock SOUL.md, which says nothing about you; do not create
+it with `--clone` (that copies your SOUL.md, MEMORY.md and USER.md). Its SOUL.md sits beside the config.yaml that
+`hermes -p shop config path` prints. `hermes -p shop lastprice doctor` shows the three memory settings and
+whether `challenge start` would run. Every command below runs in that profile (`hermes -p shop …`).
+
+## Start it: two commands
+
+With a model set and the plugin enabled in the shop profile (above), a listed item, and the bot token from
+[@BotFather](https://t.me/BotFather) saved with `hermes -p shop config set TELEGRAM_BOT_TOKEN <token>` (Hermes
+keeps it in that profile's `.env`):
+
+```
+hermes -p shop lastprice challenge start iphone-13-128gb
+hermes -p shop gateway
 ```
 
 The first command:
@@ -25,8 +50,10 @@ The first command:
 * turns every Telegram chat from anyone who is not an owner into a guarded deal chat with the challenge
   persona. A challenge chat stays guarded whether the item sold or the challenge ended; it never falls
   through to an ordinary Hermes turn;
-* saves the current value of each of the six settings below (from the home's `.env` and its own
-  `config.yaml`; "not set" is recorded too), then applies them through Hermes's own `hermes config set`
+* refuses, changing nothing, unless the profile's memory is off (above);
+* saves the current value of each of the six settings below, read one by one with `hermes config get <key>
+  --json` ("not set" is recorded too; Last Price reads no `.env` and parses no `config.yaml` itself), then
+  applies them through Hermes's own `hermes config set`
   (printed line by line; `--no-configure` prints them instead of applying them). If it cannot read the
   current values, it changes nothing and prints the commands instead.
 

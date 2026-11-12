@@ -12,7 +12,7 @@ from .runtime import Runtime
 from .state import MemoryState
 from .tools import EXTRA_SCHEMA, ITEMS_SCHEMA, OFFER_SCHEMA, TOOLSET, make_tools
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 CHAT_COMMANDS = "sell|list|pause|resume|report|doctor"  # the /lastprice subcommands that work in a chat
 
 

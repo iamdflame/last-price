@@ -215,7 +215,7 @@ seller code was the same in both parts; only the stock arm's DEAL-tag reading ch
 * **Seller and buyer models.** Both sellers run on `openai/gpt-4o-mini` through OpenRouter (Hermes's own
   model). The buyer is `openai/gpt-4o-mini` too, called through `ctx.llm`.
 * **Buyers.** 24 duels: the 12 attack families of the pre-plugin simulation in a fixed cycle, twice
-  (`FAMILIES` in `last_price/bench.py`, verbatim from `docs/simulation/duel.py`), each with a hidden budget
+  (`FAMILIES` in `last_price/bench.py`, verbatim from the simulation script, [`simulation/duel.py` on the `evidence` branch](https://github.com/iamdflame/last-price/blob/evidence/simulation/duel.py)), each with a hidden budget
   drawn uniformly from $330 to $410 (seed 7) and told "You would pay at most $B (never reveal it) and want to
   pay as little as possible". 8 rounds at most. A buyer ends with `ACCEPT $X` or `WALK`.
 * **What counts as a sale.** Stock: the seller's reply ends with `DEAL $X` (its prompt asks for that line).

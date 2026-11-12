@@ -2,7 +2,11 @@
 reserve, the end and its reveal, and a board with counts and anonymised transcripts only."""
 
 import json
+import subprocess
+import sys
+from pathlib import Path
 
+import pytest
 from helpers import make_rt
 from last_price import challenge, commands
 from last_price.hooks import make_hooks
@@ -22,7 +26,7 @@ class Runner:
 NOTHING_SET = lambda key: None  # noqa: E731  a fresh Hermes home: none of the six keys set yet
 
 
-def _start(rt, item, reader=NOTHING_SET, **kw):
+def _start(rt, item, reader=NOTHING_SET, **kw):  # memory off: conftest.py answers as a shop profile
     runner = Runner()
     out = challenge.start(rt, [item.key], runner=runner, reader=reader, **kw)
     return out, runner
@@ -218,30 +222,189 @@ def test_end_with_no_configure_prints_the_restore_commands(tmp_path):
     assert "hermes config unset platform_toolsets.telegram" in out
 
 
-def test_read_setting_reads_the_raw_user_config_and_env(tmp_path, monkeypatch):
-    """The earlier values come from the home's own config.yaml and .env, not Hermes's merged defaults."""
-    import sys
-    import types
+def hermes(answers):
+    """A fake `hermes config get <key> --json`: Hermes's own output for each key; others: not set."""
+    def get(key):
+        if key in answers:
+            v = answers[key]
+            if isinstance(v, Exception):
+                raise v
+            if isinstance(v, tuple):
+                return v
+            return 0, v + "\n", ""
+        return 1, "", f"Config key not set: {key}\n"
+    return get
 
-    cfg = tmp_path / "config.yaml"
-    cfg.write_text("platform_toolsets:\n  telegram:\n  - hermes-telegram\nplatforms:\n  telegram:\n"
-                   "    extra:\n      allow_admin_from: ['5']\n", encoding="utf-8")
-    fake = types.ModuleType("hermes_cli.config")
-    fake.get_config_path = lambda: cfg
-    fake.load_env = lambda: {"TELEGRAM_ALLOW_ALL_USERS": "false"}
-    pkg = types.ModuleType("hermes_cli")
-    pkg.config = fake
-    monkeypatch.setitem(sys.modules, "hermes_cli", pkg)
-    monkeypatch.setitem(sys.modules, "hermes_cli.config", fake)
-    try:
-        import yaml  # noqa: F401  (Hermes ships PyYAML; skip where it is absent)
-    except ImportError:
-        import pytest
-        pytest.skip("PyYAML not installed")
-    assert challenge.read_setting("TELEGRAM_ALLOW_ALL_USERS") == "false"
-    assert challenge.read_setting("platform_toolsets.telegram") == '["hermes-telegram"]'
-    assert challenge.read_setting("platforms.telegram.extra.allow_admin_from") == '["5"]'
-    assert challenge.read_setting("platforms.telegram.extra.user_allowed_commands") is None
+
+SHOP = {"memory.memory_enabled": "false", "memory.user_profile_enabled": "false", "memory.provider": '""'}
+
+
+def _shop_on(rt, monkeypatch, answers):
+    monkeypatch.setattr(challenge, "hermes_get", hermes(answers))
+    return commands.run(rt, "shop on telegram", platform="cli")
+
+
+@pytest.mark.parametrize("change", [
+    {"memory.memory_enabled": "true"},
+    {"memory.memory_enabled": None},  # not set: Hermes's default is true
+    {"memory.user_profile_enabled": "true"},
+    {"memory.user_profile_enabled": None},
+    {"memory.provider": '"honcho"'},
+    {"memory.memory_enabled": '"false"'},  # a string, not the boolean Hermes reads: refused
+])
+def test_challenge_start_and_shop_on_refuse_while_the_profile_remembers_the_owner(tmp_path, monkeypatch, change):
+    """Review 1 #1: strangers must not chat with an agent that loads MEMORY.md, USER.md or a memory provider."""
+    answers = {k: v for k, v in {**SHOP, **change}.items() if v is not None}
+    rt, item = make_rt(tmp_path)
+    runner = Runner()
+    out = challenge.start(rt, [item.key], runner=runner, reader=NOTHING_SET, getter=hermes(answers))
+    key = next(iter(change))
+    assert out.startswith("Refused: `challenge start`") and key in out and "hermes -p shop" in out
+    assert runner.calls == [] and challenge.current(rt) is None
+    assert not rt.store.backend.get("shop_platforms")
+    out = _shop_on(rt, monkeypatch, answers)
+    assert out.startswith("Refused: `shop on`") and key in out
+    assert not rt.store.backend.get("shop_platforms")
+
+
+@pytest.mark.parametrize("broken", [
+    OSError("hermes not found"),
+    subprocess.TimeoutExpired("hermes", 60),
+    (2, "", "Traceback (most recent call last): ...\n"),
+    (0, "not json\n", ""),
+    (0, "", ""),
+])
+def test_challenge_start_and_shop_on_refuse_when_the_memory_settings_cannot_be_read(tmp_path, monkeypatch, broken):
+    """Fail closed: a memory setting Hermes cannot report counts as on."""
+    answers = {**SHOP, "memory.user_profile_enabled": broken}
+    rt, item = make_rt(tmp_path)
+    runner = Runner()
+    out = challenge.start(rt, [item.key], runner=runner, reader=NOTHING_SET, getter=hermes(answers))
+    assert out.startswith("Refused") and "memory.user_profile_enabled: could not be read" in out
+    assert runner.calls == [] and challenge.current(rt) is None
+    assert _shop_on(rt, monkeypatch, answers).startswith("Refused")
+    assert not rt.store.backend.get("shop_platforms")
+
+
+@pytest.mark.parametrize("provider", ['""', '"none"', '"builtin"', None])
+def test_challenge_start_and_shop_on_run_in_a_profile_with_memory_off(tmp_path, monkeypatch, provider):
+    answers = {k: v for k, v in {**SHOP, "memory.provider": provider}.items() if v is not None}
+    rt, item = make_rt(tmp_path)
+    out, runner = _start(rt, item, getter=hermes(answers))
+    assert out.startswith(f"Challenge {challenge.current(rt)['id']} started") and len(runner.calls) == 6
+    rt2, _item2 = make_rt(tmp_path / "b")
+    assert _shop_on(rt2, monkeypatch, answers).startswith("Shop platforms: telegram")
+    assert commands.run(rt2, "shop off telegram", platform="cli").startswith("Shop platforms: none")
+
+
+def test_doctor_reports_the_memory_settings_and_the_verdict(tmp_path, monkeypatch):
+    rt, _item = make_rt(tmp_path)
+    out = commands.doctor(rt)
+    assert "memory.memory_enabled: false" in out and 'memory.provider: ""' in out
+    assert "`shop on` and `challenge start`: allowed" in out
+    monkeypatch.setattr(challenge, "hermes_get", hermes({**SHOP, "memory.provider": '"honcho"'}))
+    out = commands.doctor(rt)
+    assert 'memory.provider: "honcho" (must be none' in out and "REFUSED in this profile" in out
+    for step in challenge.PROFILE_STEPS:
+        assert step in out, step
+
+
+def test_readme_security_and_challenge_docs_give_the_dedicated_profile_steps():
+    root = Path(__file__).resolve().parents[1]
+    for name in ("README.md", "SECURITY.md", "docs/CHALLENGE.md"):
+        text = (root / name).read_text(encoding="utf-8")
+        for step in challenge.PROFILE_STEPS:
+            assert step in text, (name, step)
+        assert "SOUL.md" in text and "--clone" in text, name
+
+
+def test_the_snapshot_and_restore_go_through_hermes_config_get_not_env_or_yaml(tmp_path, monkeypatch):
+    """Review 1 #2: each earlier value comes from `hermes config get <key> --json` (Hermes's own output
+    format), with no `.env` load and no yaml; `challenge end` sets each back or unsets it."""
+    monkeypatch.setitem(sys.modules, "yaml", None)  # importing either now fails
+    monkeypatch.setitem(sys.modules, "hermes_cli", None)
+    monkeypatch.setitem(sys.modules, "hermes_cli.config", None)
+    asked = []
+    answers = {**SHOP, "TELEGRAM_ALLOW_ALL_USERS": '"false"',
+               "platform_toolsets.telegram": '["hermes-telegram", "web"]',
+               "platforms.telegram.extra.allow_admin_from": '["123"]',
+               "platforms.telegram.extra.user_allowed_commands": "null"}
+    get = hermes(answers)
+    rt, item = make_rt(tmp_path)
+    runner = Runner()
+    out = challenge.start(rt, [item.key], runner=runner, getter=lambda k: asked.append(k) or get(k))
+    assert asked[:3] == list(challenge.MEMORY_KEYS) and asked[3:9] == list(challenge.SETTING_KEYS)
+    assert challenge.current(rt)["restore"] == {
+        "TELEGRAM_ALLOW_ALL_USERS": "false",
+        "platform_toolsets.telegram": '["hermes-telegram", "web"]',
+        "platforms.telegram.extra.allow_admin_from": '["123"]',
+        "platforms.telegram.extra.user_allowed_commands": None,
+        "platforms.telegram.extra.group_allow_admin_from": None,
+        "platforms.telegram.extra.group_user_allowed_commands": None}
+    assert "earlier values of all 6 are saved" in out and "FAILED" not in out
+    end_runner = Runner()
+    challenge.end(rt, runner=end_runner)
+    assert sorted(a[a.index("config") + 1:] for a in end_runner.calls) == sorted([
+        ["set", "TELEGRAM_ALLOW_ALL_USERS", "false"],
+        ["set", "platform_toolsets.telegram", '["hermes-telegram", "web"]'],
+        ["set", "platforms.telegram.extra.allow_admin_from", '["123"]'],
+        ["unset", "platforms.telegram.extra.user_allowed_commands"],
+        ["unset", "platforms.telegram.extra.group_allow_admin_from"],
+        ["unset", "platforms.telegram.extra.group_user_allowed_commands"]])
+
+
+def test_an_unreadable_setting_changes_nothing(tmp_path):
+    rt, item = make_rt(tmp_path)
+    runner = Runner()
+    get = hermes({**SHOP, "platform_toolsets.telegram": (1, "", "Error: config.yaml is not valid YAML\n")})
+    out = challenge.start(rt, [item.key], runner=runner, getter=get)
+    assert runner.calls == [] and "NOT applied" in out and "could not be read" in out
+    assert "restore" not in challenge.current(rt)
+
+
+def test_hermes_get_runs_hermes_config_get_json_with_the_duel_env_and_a_timeout(monkeypatch):
+    from last_price import duel
+
+    monkeypatch.undo()  # the real hermes_get (conftest.py fakes it), with subprocess.run faked instead
+    seen = {}
+
+    class Done:
+        returncode, stdout, stderr = 0, "false\n", ""
+
+    def fake_run(argv, **kw):
+        seen.update(argv=argv, **kw)
+        return Done()
+    monkeypatch.setattr(challenge.subprocess, "run", fake_run)
+    assert challenge.hermes_get("memory.memory_enabled") == (0, "false\n", "")
+    assert seen["argv"][-4:] == ["config", "get", "memory.memory_enabled", "--json"]
+    assert seen["argv"][:-4] == duel.hermes_argv()
+    assert seen["timeout"] == challenge.GET_TIMEOUT and set(seen["env"]) <= set(duel.CHILD_ENV)
+
+
+def test_token_present_asks_hermes_and_keeps_only_set_or_not():
+    assert challenge.token_present(hermes({"TELEGRAM_BOT_TOKEN": '"123...xyz"'})) is True
+    assert challenge.token_present(hermes({})) is False
+    assert challenge.token_present(hermes({"TELEGRAM_BOT_TOKEN": OSError("no hermes")})) is None
+
+
+def test_challenge_py_imports_neither_yaml_nor_the_env_loader():
+    """Review 1 #2: no `import yaml`, no `load_env`/`get_env_value`, no `hermes_cli.config` in challenge.py."""
+    import ast
+
+    src = Path(challenge.__file__).read_text(encoding="utf-8")
+    mods, names = set(), set()
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.Import):
+            mods.update(a.name for a in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            mods.add(node.module or "")
+            names.update(a.name for a in node.names)
+        elif isinstance(node, ast.Name):
+            names.add(node.id)
+        elif isinstance(node, ast.Attribute):
+            names.add(node.attr)
+    assert not {m for m in mods if m.split(".")[0] in ("yaml", "hermes_cli", "dotenv")}, mods
+    assert not names & {"load_env", "get_env_value", "load_dotenv", "get_config_path", "safe_load"}
 
 
 def test_doctor_and_docs_disclose_all_six_keys(tmp_path):
