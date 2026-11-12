@@ -14,3 +14,8 @@ marks the plugin "caution", which blocks a plain `hermes plugins install`. The f
   `.env` and calls OpenRouter directly, so it is kept here, out of the installed plugin tree (Hermes review 1,
   NousResearch/hermes-agent#153858). Moved from `docs/simulation/duel.py` at `0edb99c`, unchanged; its paths
   (`../../../.env`, `results/`) are those of its old place.
+* `judge-runs/judge.sh`: the script that timed the four judge runs (`docs/JUDGE-RUN.md` on `main`, which keeps
+  their logs). It copies the `OPENROUTER_API_KEY` line from a key file (`KEYFILE`) into each throwaway Hermes
+  home, so it is kept here, out of the installed plugin tree (our own re-review before Hermes review 2,
+  NousResearch/hermes-agent#153858). Moved from `docs/judge-runs/judge.sh` at `d1d476f`, unchanged; it writes
+  `run<n>.log` beside where it runs.
