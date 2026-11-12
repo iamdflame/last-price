@@ -5,7 +5,7 @@
 A brand-new, short-path Hermes home (`C:\Users\Dflame\.hj4`, deleted afterwards) on the same Windows 11 laptop
 and Hermes 0.23.1, following only the README's "Try it" block with the README's GitHub install
 (`hermes plugins install iamdflame/last-price`, which cloned `fb22c77`): install, enable, the two duels the
-README gives, `report`, `reveal iphone-13-128gb-demo` and `doctor`. Script: [`judge-runs/judge.sh`](judge-runs/judge.sh);
+README gives, `report`, `reveal iphone-13-128gb-demo` and `doctor`. Script: [`judge-runs/judge.sh`](https://github.com/iamdflame/last-price/blob/evidence/judge-runs/judge.sh) (on the `evidence` branch: it copies the `OPENROUTER_API_KEY` line from a key file into the throwaway home, so it is kept out of the installed plugin);
 full output: [run 4](judge-runs/run4.log). The screenshots in [`screenshots/`](screenshots/) are rendered
 verbatim from this log (their captions give the line ranges).
 
@@ -32,7 +32,7 @@ Windows 11 laptop (`C:\Users\Dflame\.hj1`, `.hj2`, `.hj3`, deleted afterwards), 
 repository (`file:///…/last-price`; commit `332e212` for run 1, `1a9caba`, with the run-1 fix, for runs 2 and 3) because the public repo comes later. The one step
 outside the block is the README's stated precondition: a model for Hermes (`model.default
 openai/gpt-4o-mini`, `model.provider openrouter`, an OpenRouter key in the home's `.env`). They were timed by
-the earlier version of [`judge-runs/judge.sh`](judge-runs/judge.sh) (commit `b88d823`; the README then also
+the earlier version of [`judge-runs/judge.sh`](https://github.com/iamdflame/last-price/blob/b88d823/docs/judge-runs/judge.sh) (commit `b88d823`; the README then also
 had a `sell` step); full output: [run 1](judge-runs/run1.log),
 [run 2](judge-runs/run2.log), [run 3](judge-runs/run3.log).
 

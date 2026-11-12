@@ -98,7 +98,9 @@ ever reach `install` (an outside tester saw it there), or `install`/`enable` (wh
 try can time out and need a retry (see "If something goes wrong"): our run 4 took about 4.5 minutes in all, and
 the outside tester's fresh home about 6. Then:
 
-Until the catalog entry is merged, install straight from GitHub with `hermes plugins install iamdflame/last-price`.
+Until the catalog entry is merged, install straight from GitHub with `hermes plugins install iamdflame/last-price`
+(the repository's main branch; add `--ref <40-character commit SHA>` to pin one commit). Once it is listed,
+`hermes plugins install last-price` installs the commit Hermes reviewed:
 
 ```
 hermes plugins install last-price
@@ -194,7 +196,10 @@ messaging chat you own (Telegram, WhatsApp and other platforms), as `/lastprice 
 refuse there. In your own local Hermes chat (CLI, TUI, Desktop) all of them run, so `/lastprice reveal` there
 prints the floor on your own screen: prefer `hermes lastprice reveal` in a terminal. Deal chats on Telegram and
 WhatsApp are off until you run `hermes lastprice shop on <platform>`, which runs only in a profile with memory
-off (below); they are unit-tested, and the live runs so far are the duels and benches.
+off (below); they are unit-tested, and the live runs so far are the duels and benches. A command that refuses
+(the memory check, a terminal-only command in a chat, the demo item or a second challenge for `challenge
+start`, a real item in a `--vs-prompt` duel without `--real-item`) prints why and exits 1; otherwise
+`hermes lastprice` exits 0.
 
 **The public challenge.** `hermes lastprice challenge start <item>` then `hermes gateway` opens a Telegram bot to
 anyone: "Buy it below my floor. Any AI, any trick." It posts the floor's SHA-256 commitment, keeps every
@@ -203,15 +208,18 @@ end it. To open the bot safely, `challenge start` changes six Hermes settings th
 `TELEGRAM_ALLOW_ALL_USERS`, `platform_toolsets.telegram`, `platforms.telegram.extra.allow_admin_from`,
 `platforms.telegram.extra.user_allowed_commands`, `platforms.telegram.extra.group_allow_admin_from` and
 `platforms.telegram.extra.group_user_allowed_commands`. It saves their earlier values first, read one by one with
-`hermes config get` (it reads no `.env` and parses no `config.yaml` itself), and `challenge end` restores each one
-(a key that was not set before is unset again). Built and unit-tested; not live yet (no bot token here).
+`hermes config get` (it reads no `.env`), and `challenge end` restores each one (a key that was not set before
+is unset again). `hermes config get` reports a `${VAR}` reference expanded (`["${LP_ADMIN_ID}"]` comes back as `["4242"]`), so for these six keys `challenge start` also reads config.yaml as written, through Hermes's own raw reader (`hermes_cli.config.read_user_config_raw`, public plugin API), and saves a key that holds a reference as written: `challenge end` puts `${LP_ADMIN_ID}` back (Hermes's `config set` writes it literally), never `4242`, and `start` names each such key. If config.yaml cannot be read that way, nothing is changed and the commands are printed instead. `TELEGRAM_ALLOW_ALL_USERS` lives in `.env`, which Hermes reads without expanding references; Last Price never reads `.env`. On Windows, Hermes's own `config set`/`unset` rewrite config.yaml with CRLF line
+endings, so after `end` the file can differ from before in line endings only. Built and unit-tested; not live
+yet (no bot token here).
 [`docs/CHALLENGE.md`](docs/CHALLENGE.md).
 
-**Strangers never chat with an agent that knows you.** Hermes loads a profile's memory (`MEMORY.md`, `USER.md`)
-and any memory provider into every chat in it, a stranger's too, and Last Price's check only looks at prices. So
-`challenge start` and `shop on` refuse unless `memory.memory_enabled` and `memory.user_profile_enabled` are false
-and no `memory.provider` is set, read with `hermes config get`; if Hermes cannot report them, they refuse too.
-Run the shop and the challenge from a dedicated profile:
+**A stranger's deal chat never gets a model turn while your memory is on.** Hermes loads a profile's memory
+(`MEMORY.md`, `USER.md`) and any memory provider into every chat in it, a stranger's too, and Last Price's check
+only looks at prices. So `challenge start` and `shop on` refuse unless `memory.memory_enabled` and
+`memory.user_profile_enabled` are false and no `memory.provider` is set, read with `hermes config get`; if
+Hermes cannot report them, they refuse too. Memory can be switched on after `shop on` or `challenge start`, so every turn of a stranger's deal chat (shop or challenge) checks again before any model call: in the gateway's own process, through Hermes's public `hermes_cli.config.load_config()`, with a reading at most 10 s old. While memory is on, or cannot be read, the buyer gets "The shop is paused for now. Please try again later." and the turn makes no model call (the `pre_llm_call` block Hermes documents). A chat held once stays held until the gateway restarts, because Hermes keeps that chat's agent, built while memory was on. `doctor` says when stranger chats are held. Two limits: a turn that starts within 10 s of memory being switched on can still run with it, and a chat Last Price does not take as a deal chat (an owner's, or any chat while `shop on` has no open item to sell) is an ordinary Hermes chat. Run the shop and the challenge from a
+dedicated profile:
 
 ```
 hermes profile create shop
@@ -226,10 +234,12 @@ hermes -p shop lastprice challenge start <item>
 hermes -p shop gateway
 ```
 
+Once Last Price is listed in the Hermes plugin catalog, prefer `hermes -p shop plugins install last-price`: it installs the commit Hermes reviewed. Until then `iamdflame/last-price` installs the repository's main branch; add `--ref <40-character commit SHA>` to pin one commit.
+
 Keep that profile's SOUL.md neutral: a new profile gets Hermes's stock SOUL.md, which says nothing about you; do
 not create it with `--clone` (that copies your SOUL.md, MEMORY.md and USER.md). Its SOUL.md sits beside the
 config.yaml that `hermes -p shop config path` prints. `hermes -p shop lastprice doctor` shows the three memory
-settings and whether `shop on` and `challenge start` would run.
+settings, whether `shop on` and `challenge start` would run, and whether stranger chats are held.
 
 ## More
 

@@ -19,7 +19,9 @@ hidden stop that sits above the floor. See `docs/THREAT_MODEL.md` for the attack
 | `ctx.llm` | the rewrite of a too-low draft (given the buyer's message, the draft, the current counter and the allowed extras; never the floor); the duel's buyer |
 | `hermes_state.SessionDB` (read-only, public) | reads a session's title to recognise duel sessions; reads a duel session to confirm the floor never reached the model |
 | `subprocess` (`hermes chat`, duel only) | runs Hermes's own agent as the seller, one turn per call, from a terminal |
-| `subprocess` (`hermes config get`, `set`, `unset`) | reads the memory settings (`shop on`, `challenge start`, `doctor`) and the challenge's six settings one key at a time; sets and restores those six |
+| `subprocess` (`hermes config get`, `set`, `unset`) | reads the memory settings (`shop on`, `challenge start`, `doctor`) and the challenge's six settings one key at a time; sets and restores those six. Every `hermes` child gets the duel's allowlisted environment with `HERMES_HOME` set to Hermes's `get_hermes_home()` (the profile the plugin runs in), and a timeout after which the child and everything it started are killed |
+| `hermes_cli.config.load_config()` (public plugin API, in process) | on each turn of a stranger's deal chat: the three memory settings (a reading at most 10 s old) |
+| `hermes_cli.config.read_user_config_raw()` (public plugin API, in process) | at `challenge start`: whether any of the six settings holds a `${VAR}` reference in config.yaml, so it is restored as written |
 
 ## What leaves the machine
 
@@ -40,8 +42,11 @@ hidden stop that sits above the floor. See `docs/THREAT_MODEL.md` for the attack
   Last-Price-only Telegram toolset, owner-only slash commands: `TELEGRAM_ALLOW_ALL_USERS`,
   `platform_toolsets.telegram`, `platforms.telegram.extra.allow_admin_from`, `…user_allowed_commands`,
   `…group_allow_admin_from`, `…group_user_allowed_commands`), after saving their earlier values, each read
-  with `hermes config get <key> --json` (Last Price reads no `.env` and parses no `config.yaml` itself);
-  `challenge end` restores each one.
+  with `hermes config get <key> --json` (Last Price reads no `.env`); `challenge end` restores each one.
+  `hermes config get` reports a `${VAR}` reference expanded (`["${LP_ADMIN_ID}"]` comes back as `["4242"]`), so for these six keys `challenge start` also reads config.yaml as written, through Hermes's own raw reader (`hermes_cli.config.read_user_config_raw`, public plugin API), and saves a key that holds a reference as written: `challenge end` puts `${LP_ADMIN_ID}` back (Hermes's `config set` writes it literally), never `4242`, and `start` names each such key. If config.yaml cannot be read that way, nothing is changed and the commands are printed instead. `TELEGRAM_ALLOW_ALL_USERS` lives in `.env`, which Hermes reads without expanding references; Last Price never reads `.env`.
+* Whether `TELEGRAM_BOT_TOKEN` is set is judged by the exit code of `hermes config get TELEGRAM_BOT_TOKEN`
+  alone; its output is never captured, so the token does not reach Last Price even with
+  `security.redact_secrets: false`.
 * No telemetry. No payment provider is called in 0.1.x (pay links are placeholders).
 
 ## Strangers' chats: a dedicated profile with memory off
@@ -51,8 +56,8 @@ know. Hermes loads a profile's memory (`MEMORY.md`, `USER.md`), its SOUL.md and 
 chat in it, a stranger's too, and Last Price's check only looks at prices: a buyer could ask what the bot knows
 about you. So both refuse unless `memory.memory_enabled` and `memory.user_profile_enabled` are false and no
 `memory.provider` is set. They read the three with `hermes config get` (the same `hermes` the duel runs, with
-its allowlisted environment and a 60 s timeout) and refuse when Hermes cannot report them. Run them from a
-dedicated profile:
+its allowlisted environment, a 60 s timeout per read and one 90 s deadline for the three) and refuse when
+Hermes cannot report them. Memory can be switched on after `shop on` or `challenge start`, so every turn of a stranger's deal chat (shop or challenge) checks again before any model call: in the gateway's own process, through Hermes's public `hermes_cli.config.load_config()`, with a reading at most 10 s old. While memory is on, or cannot be read, the buyer gets "The shop is paused for now. Please try again later." and the turn makes no model call (the `pre_llm_call` block Hermes documents). A chat held once stays held until the gateway restarts, because Hermes keeps that chat's agent, built while memory was on. `doctor` says when stranger chats are held. Two limits: a turn that starts within 10 s of memory being switched on can still run with it, and a chat Last Price does not take as a deal chat (an owner's, or any chat while `shop on` has no open item to sell) is an ordinary Hermes chat. Run them from a dedicated profile:
 
 ```
 hermes profile create shop
@@ -67,10 +72,12 @@ hermes -p shop lastprice challenge start <item>
 hermes -p shop gateway
 ```
 
+Once Last Price is listed in the Hermes plugin catalog, prefer `hermes -p shop plugins install last-price`: it installs the commit Hermes reviewed. Until then `iamdflame/last-price` installs the repository's main branch; add `--ref <40-character commit SHA>` to pin one commit.
+
 Keep that profile's SOUL.md neutral: a new profile gets Hermes's stock SOUL.md, which says nothing about you; do
 not create it with `--clone` (that copies your SOUL.md, MEMORY.md and USER.md). Its SOUL.md sits beside the
 config.yaml that `hermes -p shop config path` prints. `hermes -p shop lastprice doctor` prints the three
-settings and whether `shop on` and `challenge start` would run.
+settings, whether `shop on` and `challenge start` would run, and whether stranger chats are held.
 
 ## The duel's child process
 

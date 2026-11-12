@@ -8,11 +8,11 @@ from typing import Any
 
 from . import bench, commands, duel
 from .hooks import make_hooks
-from .runtime import Runtime
+from .runtime import REFUSED_EXIT, Refusal, Runtime
 from .state import MemoryState
 from .tools import EXTRA_SCHEMA, ITEMS_SCHEMA, OFFER_SCHEMA, TOOLSET, make_tools
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 CHAT_COMMANDS = "sell|list|pause|resume|report|doctor"  # the /lastprice subcommands that work in a chat
 
 
@@ -63,7 +63,7 @@ def register(ctx: Any) -> None:
                              bench_runner=lambda rest: bench.run(rt, rest))
         if reply:
             print(reply)
-        return 0
+        return REFUSED_EXIT if isinstance(reply, Refusal) else 0  # a refusal exits 1 (README, "Commands")
 
     ctx.register_cli_command("lastprice", help="Last Price: haggle above a floor the model never sees",
                              setup_fn=setup, handler_fn=cli,

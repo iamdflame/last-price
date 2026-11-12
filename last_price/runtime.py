@@ -33,6 +33,13 @@ TOOL_NAMES = ("lastprice_items", "lastprice_offer", "lastprice_extra")
 BRIDGE_NAMES = ("tool_search", "tool_describe", "tool_call")
 
 
+class Refusal(str):
+    """A command reply that refuses to act. ``hermes lastprice`` prints it and exits ``REFUSED_EXIT``."""
+
+
+REFUSED_EXIT = 1
+
+
 @dataclass
 class Deal:
     session_id: str
@@ -68,6 +75,8 @@ class Runtime:
         self._deals: dict[str, tuple[Optional[Deal], float]] = {}
         self._lock = threading.Lock()
         self.has_capability: Optional[Callable[[str], bool]] = None  # ctx.has_capability, when Hermes gives one
+        self.memory_gate: dict = {}  # challenge.gate_open: {profile home: (memory off?, when read)}
+        self.memory_held: set[str] = set()  # stranger chats held while memory was on (challenge.chat_allowed)
 
     @property
     def llm(self) -> Any:

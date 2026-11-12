@@ -6,8 +6,10 @@
   gateway settings a public bot needs, through Hermes's own ``hermes config set`` (printed one by one):
   any Telegram user may write, the platform's toolset is Last Price only, and slash commands are for
   owners only. Six keys (``SETTING_KEYS``); their earlier values are saved first, read one by one with
-  ``hermes config get``. It refuses unless the profile's memory is off (``memory_check``): strangers must
-  not chat with an agent that knows the owner.
+  ``hermes config get``; a key whose config.yaml value holds a ``${VAR}`` reference is saved as written
+  (``raw_refs``), since ``hermes config get`` reports it expanded. It refuses unless the profile's memory
+  is off (``memory_check``): strangers must not chat with an agent that knows the owner. The same check
+  runs again on stranger chats (``chat_allowed``): while memory is on, they are held.
 * ``challenge board`` writes a Markdown board that is safe to publish: counts and anonymised
   transcripts, never a buyer id, username or name field, and (once ended) the reveal.
 * ``challenge end`` closes it: every challenge chat then gets a closing message, the six settings go
@@ -26,12 +28,12 @@ import hashlib
 import json
 import re
 import secrets
-import subprocess
 import time
 from pathlib import Path
 from typing import Any, Callable, Optional
 
 from . import audit, extract
+from .runtime import Refusal
 from .state import commitment
 
 KEY = "challenge"
@@ -104,7 +106,11 @@ SETTING_KEYS = (
 SETTINGS_DISCLOSURE = ("`challenge start` (Telegram) changes six Hermes settings through `hermes config set`: "
                        + ", ".join(SETTING_KEYS) + ". It saves their earlier values first, read one by one with "
                        "`hermes config get`, and `challenge end` restores each one (a key that was not set before is "
-                       "unset again).")
+                       "unset again). `hermes config get` reports a `${VAR}` reference expanded, so for these keys "
+                       "Last Price also reads config.yaml as written, through Hermes's own raw reader "
+                       "(`hermes_cli.config.read_user_config_raw`), and saves a key that holds a reference as written: "
+                       "`challenge end` puts the reference back, never the value it expands to. If that read fails, "
+                       "nothing is changed and the commands are printed instead.")
 
 
 def gateway_settings(rt, platform: str) -> list[tuple[str, str]]:
@@ -118,24 +124,32 @@ def gateway_settings(rt, platform: str) -> list[tuple[str, str]]:
 
 
 GET_TIMEOUT = 60
-UNSET = object()  # ``hermes config get`` said "Config key not set"
+MEMORY_DEADLINE = 90  # one deadline for all three memory reads: past it, the rest count as unreadable
+UNSET = object()  # ``hermes config get`` said "Config key not set" (a key with no Hermes default)
 
 
-def hermes_get(key: str) -> tuple[int, str, str]:
+def hermes_get(key: str, timeout: float = GET_TIMEOUT) -> tuple[int, str, str]:
     """``hermes config get <key> --json`` through the same ``hermes`` the duel runs, with the duel's
-    allowlisted environment (this Hermes home): (exit code, stdout, stderr). One key, one value: no
-    ``.env`` or ``config.yaml`` is read here."""
-    from .duel import child_env, hermes_argv
+    allowlisted environment pointed at this plugin's profile: (exit code, stdout, stderr). Hermes prints
+    the value with its defaults merged and exits 1 ("Config key not set") only for a key with no default.
+    A child that hangs is killed with everything it started after ``timeout`` (``duel.run_child``)."""
+    from .duel import child_env, hermes_argv, run_child
 
-    p = subprocess.run(hermes_argv() + ["config", "get", key, "--json"], env=child_env(), capture_output=True,
-                       encoding="utf-8", errors="replace", timeout=GET_TIMEOUT, stdin=subprocess.DEVNULL)
-    return p.returncode, p.stdout or "", p.stderr or ""
+    return run_child(hermes_argv() + ["config", "get", key, "--json"], env=child_env(), timeout=timeout)
 
 
-def config_value(key: str, getter: Optional[Callable[[str], tuple[int, str, str]]] = None) -> Any:
+def hermes_exit_code(key: str) -> int:
+    """The exit code of ``hermes config get <key>`` and nothing else: its output is never captured."""
+    from .duel import child_env, hermes_argv, run_child
+
+    return run_child(hermes_argv() + ["config", "get", key], env=child_env(), timeout=GET_TIMEOUT, capture=False)[0]
+
+
+def config_value(key: str, getter: Optional[Callable[[str], tuple[int, str, str]]] = None,
+                 timeout: float = GET_TIMEOUT) -> Any:
     """The value Hermes reports for ``key`` (parsed from ``--json``), or ``UNSET``. Raises when it cannot
     be read (Hermes missing, a timeout, an error, output that is not JSON): callers fail closed."""
-    rc, out, err = (getter or hermes_get)(key)
+    rc, out, err = getter(key) if getter is not None else hermes_get(key, timeout)
     if rc != 0:
         if "Config key not set" in (err or "") + (out or ""):
             return UNSET
@@ -153,6 +167,35 @@ def read_setting(key: str, getter: Optional[Callable[[str], tuple[int, str, str]
     if value is UNSET or value is None:
         return None
     return value if isinstance(value, str) else json.dumps(value)
+
+
+def raw_config() -> dict:
+    """config.yaml as written (no defaults, no ``${VAR}`` expansion), through Hermes's own reader for
+    write-back round-trips, ``hermes_cli.config.read_user_config_raw`` (public plugin API:
+    hermes_cli/data/plugin_api.json lists ``hermes_cli.config``). No ``.env`` is read."""
+    from hermes_cli.config import read_user_config_raw
+
+    raw = read_user_config_raw()
+    if not isinstance(raw, dict):
+        raise TypeError("config.yaml is not a mapping")
+    return raw
+
+
+def raw_refs(keys, raw: Optional[dict] = None) -> dict:
+    """{key: value as written} for each dotted key whose config.yaml value holds a ``${VAR}`` reference,
+    in the form ``hermes config set`` takes it back (Hermes writes such a value literally). Keys kept in
+    ``.env`` (no dot) are left out: Hermes reads ``.env`` without expanding references."""
+    raw = raw_config() if raw is None else raw
+    found = {}
+    for key in keys:
+        if "." not in key:
+            continue
+        node: Any = raw
+        for part in key.split("."):
+            node = node.get(part, UNSET) if isinstance(node, dict) else UNSET
+        if node is not UNSET and "${" in json.dumps(node):
+            found[key] = node if isinstance(node, str) else json.dumps(node)
+    return found
 
 
 # ---- memory: a public chat must not know the owner ----------------------------------------------
@@ -178,18 +221,28 @@ PROFILE_STEPS = (
 NEUTRAL_SOUL = ("Keep that profile's SOUL.md neutral: a new profile gets Hermes's stock SOUL.md, which says nothing "
                 "about you; do not create it with --clone (that copies your SOUL.md, MEMORY.md and USER.md). Its "
                 f"SOUL.md sits beside the config.yaml that `hermes -p {SHOP_PROFILE} config path` prints.")
+CATALOG_INSTALL = f"hermes -p {SHOP_PROFILE} plugins install last-price"
+INSTALL_NOTE = (f"Once Last Price is listed in the Hermes plugin catalog, prefer `{CATALOG_INSTALL}`: it installs the "
+                "commit Hermes reviewed. Until then `iamdflame/last-price` installs the repository's main branch; add "
+                "`--ref <40-character commit SHA>` to pin one commit.")
 PROFILE_HOWTO = ("Run the shop and the challenge from a dedicated profile with memory off, so a stranger's chat "
-                 "carries nothing about you:\n" + "\n".join("    " + s for s in PROFILE_STEPS) + "\n  " + NEUTRAL_SOUL)
+                 "carries nothing about you:\n" + "\n".join("    " + s for s in PROFILE_STEPS) + "\n  " + INSTALL_NOTE
+                 + "\n  " + NEUTRAL_SOUL)
 
 
-def memory_check(getter: Optional[Callable[[str], tuple[int, str, str]]] = None) -> tuple[bool, list[str]]:
+def memory_check(getter: Optional[Callable[[str], tuple[int, str, str]]] = None,
+                 deadline: float = MEMORY_DEADLINE) -> tuple[bool, list[str]]:
     """(allowed, one line per memory setting). Allowed only when ``memory.memory_enabled`` and
     ``memory.user_profile_enabled`` are false and no ``memory.provider`` is set; a setting that cannot be
-    read refuses (fail closed)."""
+    read, or is not read before the one overall ``deadline`` (seconds), refuses (fail closed)."""
     ok, lines = True, []
+    end = time.monotonic() + deadline
     for key in MEMORY_KEYS:
+        left = end - time.monotonic()
         try:
-            value = config_value(key, getter)
+            if left <= 0:
+                raise TimeoutError(f"{deadline:g} s deadline passed")
+            value = config_value(key, getter, timeout=left)
         except Exception as exc:
             ok = False
             lines.append(f"{key}: could not be read ({exc.__class__.__name__}): refused")
@@ -200,7 +253,8 @@ def memory_check(getter: Optional[Callable[[str], tuple[int, str, str]]] = None)
             need = "" if good else f" (must be none: hermes -p {SHOP_PROFILE} memory off)"
         else:
             good = value is False
-            shown_value = "not set (Hermes default: true)" if value is UNSET else json.dumps(value)
+            # Hermes prints its default (true) for an absent flag; "not set" is defensive (a Hermes without one)
+            shown_value = "not set" if value is UNSET else json.dumps(value)
             need = "" if good else " (must be false)"
         ok = ok and good
         lines.append(f"{key}: {shown_value}{need}")
@@ -208,9 +262,57 @@ def memory_check(getter: Optional[Callable[[str], tuple[int, str, str]]] = None)
 
 
 def memory_refusal(what: str, lines: list[str]) -> str:
-    return (f"Refused: {what} opens chats to strangers, and this profile would give them what Hermes remembers "
-            "about you (MEMORY.md, USER.md or a memory provider). The price check only looks at prices.\n"
-            + "\n".join("  " + ln for ln in lines) + "\n" + PROFILE_HOWTO)
+    return Refusal(f"Refused: {what} opens chats to strangers, and this profile would give them what Hermes "
+                   "remembers about you (MEMORY.md, USER.md or a memory provider). The price check only looks at "
+                   "prices.\n" + "\n".join("  " + ln for ln in lines) + "\n" + PROFILE_HOWTO)
+
+
+# ---- the same check on every stranger's chat ---------------------------------------------------
+# ``challenge start`` and ``shop on`` check once; memory can be switched on later, and a shop opened
+# by an older version never checked. So every turn of a stranger's chat (shop or challenge) asks again,
+# in process, before any model call: while memory is on the turn is held with HELD (the hook's
+# "block": zero model calls). A chat held once stays held for the life of the process, because Hermes
+# keeps a chat's agent, built while memory was on, across turns; a restarted gateway starts clean.
+HELD = "The shop is paused for now. Please try again later."
+GATE_TTL = 10.0  # seconds a memory reading is reused for
+
+
+def chat_get(key: str) -> tuple[int, str, str]:
+    """What ``hermes config get <key> --json`` prints, read in this process through Hermes's public
+    ``hermes_cli.config.load_config()`` (defaults merged, as ``config get`` does): no child process on a
+    chat turn."""
+    from hermes_cli.config import load_config
+
+    node: Any = load_config()
+    for part in key.split("."):
+        if not isinstance(node, dict) or part not in node:
+            return 1, "", f"Config key not set: {key}\n"
+        node = node[part]
+    return 0, json.dumps(node) + "\n", ""
+
+
+def gate_open(rt) -> bool:
+    """Whether this profile's memory is off now (cached per profile for ``GATE_TTL``); unreadable counts as on."""
+    from .duel import profile_home
+
+    now = time.monotonic()
+    home = profile_home()
+    cached = rt.memory_gate.get(home)
+    if cached is None or now - cached[1] > GATE_TTL:
+        try:
+            allowed = memory_check(chat_get, deadline=5)[0]
+        except Exception:
+            allowed = False
+        cached = rt.memory_gate[home] = (allowed, now)
+    return cached[0]
+
+
+def chat_allowed(rt, session_id: str) -> bool:
+    """False: hold this stranger's turn (memory is on, or was on during this chat in this process)."""
+    if not gate_open(rt):
+        rt.memory_held.add(session_id)
+        return False
+    return session_id not in rt.memory_held
 
 
 def snapshot(pairs: list[tuple[str, str]], reader: Optional[Callable[[str], Optional[str]]] = None) -> dict:
@@ -231,13 +333,12 @@ def shown(op: tuple) -> str:
 def hermes_config(ops: list[tuple], runner: Optional[Callable[[list[str]], tuple[int, str]]] = None) -> list[str]:
     """Apply ``("set", KEY, VALUE)`` / ``("unset", KEY)`` through Hermes's own ``hermes config`` CLI.
     Returns one report line per key."""
-    from .duel import hermes_argv
+    from .duel import child_env, hermes_argv, run_child
 
     def _run(argv: list[str]) -> tuple[int, str]:
-        p = subprocess.run(argv, capture_output=True, encoding="utf-8", errors="replace", timeout=120,
-                           stdin=subprocess.DEVNULL)
-        tail = (p.stderr or p.stdout or "").strip().splitlines()
-        return p.returncode, tail[-1] if tail else ""
+        code, out, err = run_child(argv, env=child_env(), timeout=120)  # the duel's minimal env, this profile
+        tail = (err or out).strip().splitlines()
+        return code, tail[-1] if tail else ""
 
     run = runner or _run
     lines = []
@@ -259,12 +360,14 @@ def hermes_config_set(pairs: list[tuple[str, str]],
 
 
 def token_present(getter=None) -> Optional[bool]:
-    """Whether TELEGRAM_BOT_TOKEN is set for this Hermes home, asked through ``hermes config get`` (which
-    masks it); only set or not set is kept, never the value."""
+    """Whether TELEGRAM_BOT_TOKEN is set for this profile, judged by the exit code of ``hermes config get
+    TELEGRAM_BOT_TOKEN`` alone (0: set; 1: "Config key not set"). Its output is never captured, so the
+    token is not in this process even when ``security.redact_secrets`` is off; None when unsure."""
     try:
-        return config_value("TELEGRAM_BOT_TOKEN", getter) not in (UNSET, None, "")
+        code = getter("TELEGRAM_BOT_TOKEN")[0] if getter is not None else hermes_exit_code("TELEGRAM_BOT_TOKEN")
     except Exception:
         return None
+    return True if code == 0 else False if code == 1 else None
 
 
 # ---- commands ---------------------------------------------------------------------------------
@@ -281,10 +384,11 @@ def start(rt, rest: list[str], runner=None, reader=None, getter=None) -> str:
     if item is None:
         return 'No such item. First: hermes lastprice sell "<item>" ask <price> floor <price>'
     if item.status == "demo":
-        return "The demo item's floor is public in the docs: list a real item for the challenge with `sell`."
+        return Refusal("The demo item's floor is public in the docs: list a real item for the challenge with `sell`.")
     old = current(rt)
     if old and not old.get("ended"):
-        return f"A challenge is already running on {old['platform']} ({old['item']}). End it first: challenge end"
+        return Refusal(f"A challenge is already running on {old['platform']} ({old['item']}). End it first: "
+                       "challenge end")
     allowed, why_not = memory_check(getter)
     if not allowed:
         return memory_refusal("`challenge start`", why_not)
@@ -305,11 +409,14 @@ def start(rt, rest: list[str], runner=None, reader=None, getter=None) -> str:
              f"  every {platform} chat from a non-owner is now a guarded deal chat; buyers first see:",
              f"    {intro(rec, item)}"]
     pairs = gateway_settings(rt, platform)
-    saved, why = None, "--no-configure"
+    saved, refs, why = None, {}, "--no-configure"
     if pairs and not a.no_configure:
         try:
             saved = snapshot(pairs, reader or (lambda key: read_setting(key, getter)))
+            refs = raw_refs([k for k, _v in pairs])
+            saved.update(refs)  # ${VAR} references as written: `hermes config get` reports them expanded
         except Exception as exc:  # no record of the earlier values: change nothing, print the commands
+            saved = None
             why = (f"their current values could not be read ({exc.__class__.__name__}), so `challenge end` could "
                    "not restore them")
     if saved is not None:
@@ -317,6 +424,8 @@ def start(rt, rest: list[str], runner=None, reader=None, getter=None) -> str:
         rt.store.backend.set(KEY, rec)
         lines.append(f"  gateway settings (Hermes's own `hermes config set`; the earlier values of all {len(pairs)} "
                      "are saved, and `challenge end` restores them):")
+        lines.extend(f"    {k} holds a ${{VAR}} reference: saved as written in config.yaml ({v}), so `challenge "
+                     "end` puts the reference back, not the value it expands to" for k, v in refs.items())
         lines.extend(hermes_config_set(pairs, runner))
     elif pairs:
         lines.append(f"  gateway settings NOT applied ({why}); to open the bot to anyone, run:")

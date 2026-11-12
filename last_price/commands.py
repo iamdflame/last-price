@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from . import audit, challenge, report
-from .runtime import OWNER_SURFACES, Runtime
+from .runtime import OWNER_SURFACES, Refusal, Runtime
 from .state import commitment
 
 USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
@@ -130,7 +130,7 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
         bench_runner: Optional[Callable[[list[str]], str]] = None) -> str:
     """Dispatch one ``/lastprice`` or ``hermes lastprice`` command line; returns the reply."""
     if not is_owner(rt, platform, source):
-        return "Only the shop owner can use /lastprice here."
+        return Refusal("Only the shop owner can use /lastprice here.")
     try:
         parts = shlex.split(text or "", posix=True)
     except ValueError as exc:
@@ -164,14 +164,14 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
         if cmd == "owner":
             if len(rest) == 2 and rest[0] == "add" and re.fullmatch(r"[a-z0-9_]+:[^\s]+", rest[1]):
                 if not local:
-                    return "Add owners from a terminal: hermes lastprice owner add <platform>:<user_id>"
+                    return Refusal("Add owners from a terminal: hermes lastprice owner add <platform>:<user_id>")
                 rt.store.add_owner(rest[1])
                 return f"Owner added: {rest[1]}"
             return "Usage: owner add <platform>:<user_id>"
         if cmd == "shop":
             if len(rest) == 2 and rest[0] in ("on", "off") and re.fullmatch(r"[a-z0-9_]+", rest[1]):
                 if not local:
-                    return "Change shop platforms from a terminal."
+                    return Refusal("Change shop platforms from a terminal.")
                 if rest[0] == "on":
                     allowed, why_not = challenge.memory_check()
                     if not allowed:
@@ -189,7 +189,7 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
             return report.render(rt.ledger.read(), duel=a.duel, last=a.last)
         if cmd == "reveal":
             if not local:
-                return "Reveal only in a terminal: hermes lastprice reveal <item>"
+                return Refusal("Reveal only in a terminal: hermes lastprice reveal <item>")
             it = rt.store.item(" ".join(rest) if rest else None)
             if it is None:
                 return "No such item."
@@ -201,15 +201,15 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
             return doctor(rt)
         if cmd == "challenge":
             if not local:
-                return "Run the challenge from a terminal: hermes lastprice challenge start <item>"
+                return Refusal("Run the challenge from a terminal: hermes lastprice challenge start <item>")
             return challenge.run(rt, rest)
         if cmd == "duel":
             if not local or duel_runner is None:
-                return "Duels run in a terminal: hermes lastprice duel --vs-prompt \"<instruction>\""
+                return Refusal("Duels run in a terminal: hermes lastprice duel --vs-prompt \"<instruction>\"")
             return duel_runner(rest)
         if cmd == "bench":
             if not local or bench_runner is None:
-                return "The bench runs in a terminal: hermes lastprice bench --duels 12 --budgets 330-410"
+                return Refusal("The bench runs in a terminal: hermes lastprice bench --duels 12 --budgets 330-410")
             return bench_runner(rest)
     except ValueError as exc:
         return f"{exc}\n\n{USAGE}"
@@ -304,6 +304,15 @@ def doctor(rt: Runtime) -> str:
     lines.append(f"    `shop on` and `challenge start`: {'allowed' if allowed else 'REFUSED in this profile'}. "
                  + challenge.PROFILE_HOWTO.replace("\n", "\n  "))
     rec = challenge.current(rt)
+    open_to = sorted(set(rt.store.backend.get("shop_platforms", []) or [])
+                     | ({rec["platform"]} if rec and not rec.get("ended") else set()))
+    if open_to and not allowed:
+        lines.append(f"  stranger chats on {', '.join(open_to)}: HELD while memory is on: each turn gets "
+                     f"\"{challenge.HELD}\" and no model call. Turn memory off, then restart the gateway: a chat "
+                     "held while memory was on stays held until it restarts.")
+    elif open_to:
+        lines.append(f"  stranger chats on {', '.join(open_to)}: memory is checked again on each turn (a reading at "
+                     f"most {challenge.GATE_TTL:g} s old), and a turn is held while it is on.")
     if rec:
         lines.append(f"  challenge: {rec['id']} on {rec['platform']} ({'ended' if rec.get('ended') else 'LIVE'}), item "
                      f"{rec['item']}; `hermes lastprice challenge board` writes the public board")

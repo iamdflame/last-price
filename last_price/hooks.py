@@ -105,6 +105,8 @@ def make_hooks(rt: Runtime):
         if deal is None or not deal.guarded:
             return None
         try:
+            if deal.kind == "chat" and not challenge.chat_allowed(rt, deal.session_id):
+                return {"action": "block", "message": challenge.HELD}  # memory is on: no model turn
             if deal.challenge:
                 rec = challenge.current(rt)
                 if rec is None or rec.get("id") != deal.challenge or rec.get("ended"):

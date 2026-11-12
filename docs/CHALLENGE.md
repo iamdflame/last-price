@@ -13,7 +13,8 @@ the board will be published at `docs/challenge/board.md`.
 Hermes loads a profile's memory (`MEMORY.md`, `USER.md`) and any memory provider into every chat in it, a
 stranger's too, and Last Price's check only looks at prices. So `challenge start` (and `shop on`) refuse unless
 `memory.memory_enabled` and `memory.user_profile_enabled` are false and no `memory.provider` is set. It reads them
-with `hermes config get`; if Hermes cannot report one, it refuses. Make a profile used for nothing else:
+with `hermes config get`; if Hermes cannot report one, it refuses. Memory can be switched on after `shop on` or `challenge start`, so every turn of a stranger's deal chat (shop or challenge) checks again before any model call: in the gateway's own process, through Hermes's public `hermes_cli.config.load_config()`, with a reading at most 10 s old. While memory is on, or cannot be read, the buyer gets "The shop is paused for now. Please try again later." and the turn makes no model call (the `pre_llm_call` block Hermes documents). A chat held once stays held until the gateway restarts, because Hermes keeps that chat's agent, built while memory was on. `doctor` says when stranger chats are held. Two limits: a turn that starts within 10 s of memory being switched on can still run with it, and a chat Last Price does not take as a deal chat (an owner's, or any chat while `shop on` has no open item to sell) is an ordinary Hermes chat. Make a profile used
+for nothing else:
 
 ```
 hermes profile create shop
@@ -28,10 +29,13 @@ hermes -p shop lastprice challenge start <item>
 hermes -p shop gateway
 ```
 
+Once Last Price is listed in the Hermes plugin catalog, prefer `hermes -p shop plugins install last-price`: it installs the commit Hermes reviewed. Until then `iamdflame/last-price` installs the repository's main branch; add `--ref <40-character commit SHA>` to pin one commit.
+
 Keep its SOUL.md neutral: a new profile gets Hermes's stock SOUL.md, which says nothing about you; do not create
 it with `--clone` (that copies your SOUL.md, MEMORY.md and USER.md). Its SOUL.md sits beside the config.yaml that
 `hermes -p shop config path` prints. `hermes -p shop lastprice doctor` shows the three memory settings and
-whether `challenge start` would run. Every command below runs in that profile (`hermes -p shop …`).
+whether `challenge start` would run, and whether stranger chats are held. Every command below runs in that
+profile (`hermes -p shop …`).
 
 ## Start it: two commands
 
@@ -52,10 +56,9 @@ The first command:
   through to an ordinary Hermes turn;
 * refuses, changing nothing, unless the profile's memory is off (above);
 * saves the current value of each of the six settings below, read one by one with `hermes config get <key>
-  --json` ("not set" is recorded too; Last Price reads no `.env` and parses no `config.yaml` itself), then
-  applies them through Hermes's own `hermes config set`
-  (printed line by line; `--no-configure` prints them instead of applying them). If it cannot read the
-  current values, it changes nothing and prints the commands instead.
+  --json` ("not set" is recorded too; Last Price reads no `.env`), then applies them through Hermes's own
+  `hermes config set` (printed line by line; `--no-configure` prints them instead of applying them). If it
+  cannot read the current values, it changes nothing and prints the commands instead. `hermes config get` reports a `${VAR}` reference expanded (`["${LP_ADMIN_ID}"]` comes back as `["4242"]`), so for these six keys `challenge start` also reads config.yaml as written, through Hermes's own raw reader (`hermes_cli.config.read_user_config_raw`, public plugin API), and saves a key that holds a reference as written: `challenge end` puts `${LP_ADMIN_ID}` back (Hermes's `config set` writes it literally), never `4242`, and `start` names each such key. If config.yaml cannot be read that way, nothing is changed and the commands are printed instead. `TELEGRAM_ALLOW_ALL_USERS` lives in `.env`, which Hermes reads without expanding references; Last Price never reads `.env`.
 
   | Setting | Value | Why |
   |---|---|---|
@@ -105,14 +108,17 @@ hermes lastprice challenge board          # now with the floor, the salt and the
 
 After `end`, every challenge chat gets "The Last Price challenge has ended…" and no model turn runs. `end`
 puts each of the six settings back to the value saved at `start`, through `hermes config set` (or `hermes
-config unset` for a key that was not set before), and prints each line. `challenge end --no-configure` prints
-those commands instead of running them.
+config unset` for a key that was not set before), and prints each line; a key that held a `${VAR}` reference
+gets the reference back. `challenge end --no-configure` prints those commands instead of running them. On
+Windows, Hermes's own `config set`/`unset` rewrite config.yaml with CRLF line endings, so after `end` it can
+differ from before in line endings only.
 
 ## What is tested, and what still needs a human buyer
 
-Tested (`tests/test_challenge.py`, no network): the start output and the exact `hermes config set` calls;
-the six earlier values saved at start and every one restored (or unset) at end; nothing changed when the
-earlier values cannot be read;
+Tested (`tests/test_challenge.py`, `tests/test_review2.py`, no network): the start output and the exact
+`hermes config set` calls; the six earlier values saved at start and every one restored (or unset) at end; a
+`${VAR}` reference restored as written; nothing changed when the earlier values cannot be read; memory
+switched on after start holds every challenge and shop turn (driven through the `pre_llm_call` hook);
 owner chats are left alone; persona and opening price in the deal context; the floor in none of it; the
 intro and consent line once, on the first reply; a planted sub-floor draft ("Deal, $300 it is!") rewritten in
 a challenge chat; a close recorded but not reserved; a reserved item still guarded; `end` blocks every chat;

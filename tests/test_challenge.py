@@ -223,8 +223,12 @@ def test_end_with_no_configure_prints_the_restore_commands(tmp_path):
 
 
 def hermes(answers):
-    """A fake `hermes config get <key> --json`: Hermes's own output for each key; others: not set."""
-    def get(key):
+    """A fake `hermes config get <key> --json` for a profile whose config.yaml sets ``answers`` (an exception
+    is raised, a tuple is returned as is). Like real Hermes, an absent key prints its default
+    (conftest.HERMES_DEFAULTS) and only a key with no default exits 1 "Config key not set"."""
+    from conftest import HERMES_DEFAULTS
+
+    def get(key, timeout=None):
         if key in answers:
             v = answers[key]
             if isinstance(v, Exception):
@@ -232,6 +236,8 @@ def hermes(answers):
             if isinstance(v, tuple):
                 return v
             return 0, v + "\n", ""
+        if key in HERMES_DEFAULTS:
+            return 0, HERMES_DEFAULTS[key] + "\n", ""
         return 1, "", f"Config key not set: {key}\n"
     return get
 
@@ -246,11 +252,13 @@ def _shop_on(rt, monkeypatch, answers):
 
 @pytest.mark.parametrize("change", [
     {"memory.memory_enabled": "true"},
-    {"memory.memory_enabled": None},  # not set: Hermes's default is true
+    {"memory.memory_enabled": None},  # absent from config.yaml: real Hermes prints its default, true
     {"memory.user_profile_enabled": "true"},
     {"memory.user_profile_enabled": None},
     {"memory.provider": '"honcho"'},
     {"memory.memory_enabled": '"false"'},  # a string, not the boolean Hermes reads: refused
+    # defensive only: real Hermes never says "not set" for a memory flag (it has a default); still refused
+    {"memory.memory_enabled": (1, "", "Config key not set: memory.memory_enabled\n")},
 ])
 def test_challenge_start_and_shop_on_refuse_while_the_profile_remembers_the_owner(tmp_path, monkeypatch, change):
     """Review 1 #1: strangers must not chat with an agent that loads MEMORY.md, USER.md or a memory provider."""
@@ -260,6 +268,9 @@ def test_challenge_start_and_shop_on_refuse_while_the_profile_remembers_the_owne
     out = challenge.start(rt, [item.key], runner=runner, reader=NOTHING_SET, getter=hermes(answers))
     key = next(iter(change))
     assert out.startswith("Refused: `challenge start`") and key in out and "hermes -p shop" in out
+    assert isinstance(out, challenge.Refusal)
+    if change[key] is None:
+        assert f"{key}: true (must be false)" in out  # what real Hermes reports for an absent flag
     assert runner.calls == [] and challenge.current(rt) is None
     assert not rt.store.backend.get("shop_platforms")
     out = _shop_on(rt, monkeypatch, answers)
@@ -365,16 +376,13 @@ def test_an_unreadable_setting_changes_nothing(tmp_path):
 def test_hermes_get_runs_hermes_config_get_json_with_the_duel_env_and_a_timeout(monkeypatch):
     from last_price import duel
 
-    monkeypatch.undo()  # the real hermes_get (conftest.py fakes it), with subprocess.run faked instead
+    monkeypatch.undo()  # the real hermes_get (conftest.py fakes it), with the child process faked instead
     seen = {}
 
-    class Done:
-        returncode, stdout, stderr = 0, "false\n", ""
-
-    def fake_run(argv, **kw):
+    def fake_run_child(argv, **kw):
         seen.update(argv=argv, **kw)
-        return Done()
-    monkeypatch.setattr(challenge.subprocess, "run", fake_run)
+        return 0, "false\n", ""
+    monkeypatch.setattr(duel, "run_child", fake_run_child)
     assert challenge.hermes_get("memory.memory_enabled") == (0, "false\n", "")
     assert seen["argv"][-4:] == ["config", "get", "memory.memory_enabled", "--json"]
     assert seen["argv"][:-4] == duel.hermes_argv()
@@ -385,10 +393,37 @@ def test_token_present_asks_hermes_and_keeps_only_set_or_not():
     assert challenge.token_present(hermes({"TELEGRAM_BOT_TOKEN": '"123...xyz"'})) is True
     assert challenge.token_present(hermes({})) is False
     assert challenge.token_present(hermes({"TELEGRAM_BOT_TOKEN": OSError("no hermes")})) is None
+    assert challenge.token_present(hermes({"TELEGRAM_BOT_TOKEN": (2, "", "Traceback")})) is None
+
+
+def test_token_present_judges_by_the_exit_code_and_never_captures_the_token(monkeypatch, capfd):
+    """Review 2, NIT: with security.redact_secrets false, `hermes config get TELEGRAM_BOT_TOKEN` prints the whole
+    token. A stand-in `hermes` that does exactly that: its output goes nowhere and only the exit code is kept."""
+    from last_price import duel
+
+    monkeypatch.undo()
+    token = "7012345678:AAH-full-unmasked-token-value"
+    seen = {}
+    real = duel.run_child
+
+    def spy(argv, **kw):
+        seen.update(kw)
+        result = real(argv, **kw)
+        seen["result"] = result
+        return result
+    monkeypatch.setattr(duel, "run_child", spy)
+    monkeypatch.setattr(duel, "hermes_argv", lambda: [sys.executable, "-c", f"print({token!r})", "--"])
+    assert challenge.token_present() is True
+    assert seen["capture"] is False and token not in repr(seen["result"])
+    assert token not in "".join(capfd.readouterr())
+    monkeypatch.setattr(duel, "hermes_argv", lambda: [sys.executable, "-c", "import sys; sys.exit(1)", "--"])
+    assert challenge.token_present() is False
 
 
 def test_challenge_py_imports_neither_yaml_nor_the_env_loader():
-    """Review 1 #2: no `import yaml`, no `load_env`/`get_env_value`, no `hermes_cli.config` in challenge.py."""
+    """Review 1 #2: no `import yaml`, no `load_env`/`get_env_value` in challenge.py. From Hermes it imports only
+    two names of the public plugin API (hermes_cli/data/plugin_api.json lists `hermes_cli.config`):
+    `load_config` (the chat-turn memory gate) and `read_user_config_raw` (the ${VAR} check)."""
     import ast
 
     src = Path(challenge.__file__).read_text(encoding="utf-8")
@@ -403,7 +438,11 @@ def test_challenge_py_imports_neither_yaml_nor_the_env_loader():
             names.add(node.id)
         elif isinstance(node, ast.Attribute):
             names.add(node.attr)
-    assert not {m for m in mods if m.split(".")[0] in ("yaml", "hermes_cli", "dotenv")}, mods
+    assert not {m for m in mods if m.split(".")[0] in ("yaml", "dotenv")}, mods
+    assert {m for m in mods if m.split(".")[0] == "hermes_cli"} == {"hermes_cli.config"}, mods
+    hermes_names = {a.name for node in ast.walk(ast.parse(src)) if isinstance(node, ast.ImportFrom)
+                    and node.module == "hermes_cli.config" for a in node.names}
+    assert hermes_names == {"load_config", "read_user_config_raw"}, hermes_names
     assert not names & {"load_env", "get_env_value", "load_dotenv", "get_config_path", "safe_load"}
 
 

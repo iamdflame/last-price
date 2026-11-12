@@ -37,7 +37,7 @@ from typing import Any, Callable, Optional
 
 from . import extract
 from .report import plural
-from .runtime import Runtime
+from .runtime import Refusal, Runtime
 
 BUYER_SYSTEM = (
     "You are buying this used item: {name}. The seller asks {ask}. You want to pay as little as possible; "
@@ -143,26 +143,77 @@ def hermes_argv() -> list[str]:
     return [exe] if exe else [sys.executable, "-m", "hermes_cli.main"]
 
 
-def child_env(extra: Optional[dict] = None) -> dict:
-    """The minimal environment every child ``hermes`` gets (``CHILD_ENV``), with this home."""
-    env = {k: os.environ[k] for k in CHILD_ENV if k in os.environ}
-    if "HERMES_HOME" not in env:
-        try:
-            from hermes_constants import get_hermes_home
+def profile_home() -> Optional[str]:
+    """The Hermes home of the profile this plugin runs in: Hermes's documented ``get_hermes_home()``
+    (``hermes_constants``, public plugin API), which follows a per-session profile in the TUI/Desktop
+    backend; the process's ``HERMES_HOME`` only when Hermes is not importable."""
+    try:
+        from hermes_constants import get_hermes_home
 
-            env["HERMES_HOME"] = str(get_hermes_home())
-        except Exception:
-            pass
+        return str(get_hermes_home())
+    except Exception:
+        return os.environ.get("HERMES_HOME") or None
+
+
+def child_env(extra: Optional[dict] = None) -> dict:
+    """The minimal environment every child ``hermes`` gets (``CHILD_ENV``), pointed at this plugin's
+    profile (``profile_home``), not at whatever ``HERMES_HOME`` the process inherited."""
+    env = {k: os.environ[k] for k in CHILD_ENV if k in os.environ}
+    home = profile_home()
+    if home:
+        env["HERMES_HOME"] = home
     env.update(extra or {})
     return env
+
+
+def kill_tree(proc: subprocess.Popen) -> None:
+    """Kill a child and everything it started: a ``hermes`` launcher's Python child keeps the pipes
+    open after the launcher dies, so killing the launcher alone leaves ``communicate`` waiting."""
+    try:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
+        else:
+            import signal
+
+            os.killpg(proc.pid, signal.SIGKILL)  # start_new_session=True: the child leads its own group
+    except Exception:
+        pass
+    try:
+        proc.kill()
+    except Exception:
+        pass
+
+
+def run_child(argv: list[str], *, env: dict, timeout: float, capture: bool = True) -> tuple[int, str, str]:
+    """Run one child process with a hard deadline: (exit code, stdout, stderr). On timeout the whole
+    process tree is killed and ``subprocess.TimeoutExpired`` is raised, so a hung child (or a grandchild
+    holding its pipes) costs ``timeout`` plus a few seconds, never more. With ``capture=False`` the
+    child's output goes nowhere and is never read."""
+    out = subprocess.PIPE if capture else subprocess.DEVNULL
+    proc = subprocess.Popen(argv, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=out, encoding="utf-8",
+                            errors="replace", start_new_session=(os.name != "nt"))
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        kill_tree(proc)
+        try:
+            proc.communicate(timeout=5)
+        except Exception:  # a pipe still held open: stop reading, the caller fails closed
+            for pipe in (proc.stdout, proc.stderr):
+                try:
+                    pipe and pipe.close()
+                except Exception:
+                    pass
+        raise subprocess.TimeoutExpired(argv, timeout)
+    return proc.returncode, stdout or "", stderr or ""
 
 
 def hermes_cli(args: list[str], timeout: int = 120) -> tuple[int, str]:
     """Run one public ``hermes`` CLI command: (exit code, output), or (-1, the error) if it could not run."""
     try:
-        proc = subprocess.run(hermes_argv() + args, env=child_env(), stdin=subprocess.DEVNULL, capture_output=True,
-                              timeout=timeout, encoding="utf-8", errors="replace")
-        return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
+        code, stdout, stderr = run_child(hermes_argv() + args, env=child_env(), timeout=timeout)
+        return code, stdout + stderr
     except Exception as exc:
         return -1, f"{exc.__class__.__name__}: {exc}"
 
@@ -234,11 +285,10 @@ class Seller:
             argv += ["--resume", self.session_id]
         else:
             argv += ["-c", self.title, "--create-if-missing", "-t", self.toolset, "--ignore-rules", "--source", "tool"]
-        proc = subprocess.run(argv, env=self.env(), stdin=subprocess.DEVNULL, capture_output=True, timeout=self.timeout,
-                              encoding="utf-8", errors="replace")
+        _code, stdout, stderr = run_child(argv, env=self.env(), timeout=self.timeout)
         result = None
         self.streamed = []  # every text event the user-facing stream carried this turn
-        for line in (proc.stdout or "").splitlines():
+        for line in stdout.splitlines():
             try:
                 ev = json.loads(line)
             except ValueError:
@@ -248,7 +298,7 @@ class Seller:
             if ev.get("type") == "result":
                 result = ev
         if result is None:
-            tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-3:]
+            tail = (stderr or stdout).strip().splitlines()[-3:]
             raise RuntimeError("hermes chat returned no result: " + " | ".join(tail))
         self.session_id = result.get("session_id") or self.session_id
         tok = result.get("tokens") or {}
@@ -421,7 +471,7 @@ def pick_item(rt: Runtime, item_arg: str, real_item: bool, stock_arm: bool, out:
     if item.status == "demo" or not stock_arm:
         return item, None
     if not real_item:
-        return None, REAL_ITEM_REFUSED.format(key=item.key)
+        return None, Refusal(REAL_ITEM_REFUSED.format(key=item.key))
     out(REAL_ITEM_WARNING.format(name=item.name))
     return item, None
 
