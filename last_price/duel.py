@@ -185,18 +185,43 @@ def kill_tree(proc: subprocess.Popen) -> None:
         pass
 
 
+# Every child still running, so Ctrl+C can stop them: duel arms and bench duels run children from worker
+# threads, which never see the main thread's KeyboardInterrupt.
+_LIVE: set = set()
+_LIVE_LOCK = threading.Lock()
+_STOPPED = threading.Event()
+
+
+def stop_children() -> None:
+    """Ctrl+C in the main thread: start no new child in this process and kill every live one, with what it
+    started (``kill_tree``, on Windows too)."""
+    _STOPPED.set()
+    with _LIVE_LOCK:
+        live = list(_LIVE)
+    for proc in live:
+        if proc.poll() is None:
+            kill_tree(proc)
+
+
 def run_child(argv: list[str], *, env: dict, timeout: float, capture: bool = True) -> tuple[int, str, str]:
     """Run one child process with a hard deadline: (exit code, stdout, stderr). On timeout the whole
     process tree is killed and ``subprocess.TimeoutExpired`` is raised, so a hung child (or a grandchild
     holding its pipes) costs ``timeout`` plus a few seconds, never more. With ``capture=False`` the
     child's output goes nowhere and is never read."""
+    if _STOPPED.is_set():
+        raise ChildProcessError("stopped (Ctrl+C): no new child process")
     out = subprocess.PIPE if capture else subprocess.DEVNULL
     proc = subprocess.Popen(argv, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=out, encoding="utf-8",
                             errors="replace", start_new_session=(os.name != "nt"))
+    with _LIVE_LOCK:
+        _LIVE.add(proc)
+    done = False
     try:
         stdout, stderr = proc.communicate(timeout=timeout)
+        done = True
     except subprocess.TimeoutExpired:
         kill_tree(proc)
+        done = True  # killed above; the pipes are drained or closed below
         try:
             proc.communicate(timeout=5)
         except Exception:  # a pipe still held open: stop reading, the caller fails closed
@@ -206,6 +231,16 @@ def run_child(argv: list[str], *, env: dict, timeout: float, capture: bool = Tru
                 except Exception:
                     pass
         raise subprocess.TimeoutExpired(argv, timeout)
+    finally:
+        # Ctrl+C (KeyboardInterrupt) or any other error while waiting: the child runs in its own session
+        # on POSIX, so the terminal's SIGINT never reaches it; kill it and everything it started, on
+        # Windows too. Only a child still running: a dead child's PID may already belong to another process.
+        try:
+            if not done and proc.poll() is None:
+                kill_tree(proc)
+        finally:
+            with _LIVE_LOCK:
+                _LIVE.discard(proc)
     return proc.returncode, stdout or "", stderr or ""
 
 
@@ -417,8 +452,12 @@ def play(rt: Runtime, item, instruction: str, *, arms: list[str], buyer_model: s
         threads = [threading.Thread(target=arm_loop, args=(arm,), daemon=True) for arm in arms]
         for t in threads:
             t.start()
-        for t in threads:
-            t.join()
+        try:
+            for t in threads:
+                t.join()
+        except BaseException:  # Ctrl+C: the arms' children run in their own sessions, so kill them here
+            stop_children()
+            raise
 
     fp = floor_pattern(item.floor)
     ledger = rt.ledger.read()

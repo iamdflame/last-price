@@ -9,7 +9,8 @@
   ``hermes config get``; a key whose config.yaml value holds a ``${VAR}`` reference is saved as written
   (``raw_refs``), since ``hermes config get`` reports it expanded. It refuses unless the profile's memory
   is off (``memory_check``): strangers must not chat with an agent that knows the owner. The same check
-  runs again on stranger chats (``chat_allowed``): while memory is on, they are held.
+  runs again on stranger chats (``chat_allowed``): while memory is on, they are held, and a held chat stays
+  held across restarts until ``shop release``.
 * ``challenge board`` writes a Markdown board that is safe to publish: counts and anonymised
   transcripts, never a buyer id, username or name field, and (once ended) the reveal.
 * ``challenge end`` closes it: every challenge chat then gets a closing message, the six settings go
@@ -271,10 +272,24 @@ def memory_refusal(what: str, lines: list[str]) -> str:
 # ``challenge start`` and ``shop on`` check once; memory can be switched on later, and a shop opened
 # by an older version never checked. So every turn of a stranger's chat (shop or challenge) asks again,
 # in process, before any model call: while memory is on the turn is held with HELD (the hook's
-# "block": zero model calls). A chat held once stays held for the life of the process, because Hermes
-# keeps a chat's agent, built while memory was on, across turns; a restarted gateway starts clean.
+# "block": zero model calls).
+# Hermes builds a chat's system prompt on its first turn, saves it in state.db before ``pre_llm_call``
+# runs, and replays it verbatim on every later turn, across gateway restarts (website/docs/user-guide/
+# sessions.md, "Refresh Prompts After a Profile Update"). So a chat whose prompt may carry memory stays
+# held, in plugin state (``HOLD_KEY``), across restarts, until the owner runs ``shop release``: with
+# memory off and the gateway stopped, it runs ``hermes sessions refresh-prompts``, after which Hermes
+# rebuilds each chat's prompt from the profile as it is now, before the next turn's ``pre_llm_call``.
 HELD = "The shop is paused for now. Please try again later."
-GATE_TTL = 10.0  # seconds a memory reading is reused for
+HOLD_KEY = "memory_hold"  # plugin state: {"held": {session id: when}, "clear": {session id: when}}
+RELEASE_STEPS = (f"hermes -p {SHOP_PROFILE} gateway stop",
+                 f"hermes -p {SHOP_PROFILE} lastprice shop release",
+                 f"hermes -p {SHOP_PROFILE} gateway")
+RELEASE_HOWTO = ("A held chat stays held, across gateway restarts, until you release it: Hermes saved its system "
+                 "prompt, which may carry your memory, and replays it on every turn. With memory off, run: "
+                 + "; ".join(f"`{s}`" for s in RELEASE_STEPS) + ". `shop release` refuses while memory is on or "
+                 "the gateway runs (a running gateway keeps each chat's agent as it was built), and runs `hermes "
+                 "sessions refresh-prompts`, so Hermes rebuilds each chat's prompt, without memory, before its "
+                 "next turn.")
 
 
 def chat_get(key: str) -> tuple[int, str, str]:
@@ -292,27 +307,99 @@ def chat_get(key: str) -> tuple[int, str, str]:
 
 
 def gate_open(rt) -> bool:
-    """Whether this profile's memory is off now (cached per profile for ``GATE_TTL``); unreadable counts as on."""
-    from .duel import profile_home
-
-    now = time.monotonic()
-    home = profile_home()
-    cached = rt.memory_gate.get(home)
-    if cached is None or now - cached[1] > GATE_TTL:
-        try:
-            allowed = memory_check(chat_get, deadline=5)[0]
-        except Exception:
-            allowed = False
-        cached = rt.memory_gate[home] = (allowed, now)
-    return cached[0]
-
-
-def chat_allowed(rt, session_id: str) -> bool:
-    """False: hold this stranger's turn (memory is on, or was on during this chat in this process)."""
-    if not gate_open(rt):
-        rt.memory_held.add(session_id)
+    """Whether this profile's memory is off now; unreadable counts as on. Read on every turn, with no
+    cache of ours: ``load_config`` re-reads config.yaml whenever the file's signature changes (Hermes
+    caches it on that), and the three reads cost under 1 ms a turn (0.84 ms measured on Hermes 0.23.1)."""
+    try:
+        return memory_check(chat_get, deadline=5)[0]
+    except Exception:
         return False
-    return session_id not in rt.memory_held
+
+
+def holds(rt) -> dict:
+    """{"held": {session id: when}, "clear": {session id: when}} from plugin state."""
+    rec = rt.store.backend.get(HOLD_KEY) or {}
+    return {"held": dict(rec.get("held") or {}), "clear": dict(rec.get("clear") or {})}
+
+
+def _mark(rt, session_ids, state: str) -> None:
+    other = "clear" if state == "held" else "held"
+    with rt._lock:
+        rec = holds(rt)
+        for sid in session_ids:
+            rec[other].pop(sid, None)
+            rec[state][sid] = round(time.time(), 3)
+        rt.store.backend.set(HOLD_KEY, rec)
+
+
+def chat_allowed(rt, session_id: str, first_turn: bool = False) -> bool:
+    """False: hold this stranger's turn. A chat runs only while memory is off and its prompt was built
+    with memory off: it started (its first turn) while memory was off, or the owner released it after a
+    refresh. A chat held once, or first seen past its first turn (begun under an earlier version, or as
+    an ordinary chat), stays held in plugin state until ``shop release``."""
+    rec = holds(rt)
+    if session_id in rec["held"]:
+        return False
+    if not gate_open(rt):
+        _mark(rt, [session_id], "held")
+        return False
+    if session_id in rec["clear"]:
+        return True
+    if first_turn or _lineage(rt, session_id, rec) == "clear":
+        _mark(rt, [session_id], "clear")
+        return True
+    _mark(rt, [session_id], "held")  # its saved prompt was built before this check ran: it may carry memory
+    return False
+
+
+def _lineage(rt, session_id: str, rec: dict, hops: int = 32) -> Optional[str]:
+    """"held" or "clear" from the nearest recorded session this one continues (Hermes gives a compressed
+    chat a new session id whose parent is the old one; its prompt is rebuilt by the same agent, which ran
+    only while memory was off); None when no ancestor is recorded or the lineage cannot be read."""
+    sid = session_id
+    try:
+        for _ in range(hops):
+            sid = rt.parent_lookup(sid)
+            if not sid:
+                return None
+            for state in ("held", "clear"):
+                if sid in rec[state]:
+                    return state
+    except Exception:
+        return None
+    return None
+
+
+def release(rt, *, memory: Optional[Callable[[], tuple[bool, list[str]]]] = None,
+            gateway: Optional[Callable[[], Optional[bool]]] = None,
+            refresh: Optional[Callable[[], tuple[int, str]]] = None) -> str:
+    """``hermes lastprice shop release``: let held stranger chats run again, only once Hermes will rebuild
+    their saved prompts without memory. Refuses while memory is on, while the gateway runs or its status is
+    unknown, and when ``hermes sessions refresh-prompts`` fails; then nothing is released."""
+    from .duel import gateway_running, hermes_cli
+
+    held = sorted(holds(rt)["held"])
+    if not held:
+        return "No stranger chat is held."
+    allowed, lines = (memory or memory_check)()
+    if not allowed:
+        return Refusal(f"Refused: memory is on in this profile, so the {len(held)} held chat(s) stay held.\n"
+                       + "\n".join("  " + ln for ln in lines) + "\n" + PROFILE_HOWTO)
+    running = (gateway or gateway_running)()
+    if running is not False:
+        why = "is running" if running else "status could not be read (`hermes gateway status`)"
+        return Refusal(f"Refused: the gateway {why}. A running gateway keeps each held chat's agent as it was "
+                       "built, while memory was on, and would rebuild the chat's prompt with your memory in it. "
+                       f"Stop it first: `{RELEASE_STEPS[0]}`, then run `{RELEASE_STEPS[1]}` again.")
+    code, text = (refresh or (lambda: hermes_cli(["sessions", "refresh-prompts"])))()
+    if code != 0:
+        tail = (text or "").strip().splitlines()
+        return Refusal("Refused: `hermes sessions refresh-prompts` failed"
+                       + (f" ({tail[-1][:200]})" if tail else "") + f"; the {len(held)} held chat(s) stay held.")
+    _mark(rt, held, "clear")
+    return (f"Released {len(held)} chat(s). `hermes sessions refresh-prompts` ran: Hermes rebuilds each one's "
+            "system prompt from this profile, memory off, before its next turn, and every turn still checks "
+            f"memory. Start the gateway: `{RELEASE_STEPS[2]}`")
 
 
 def snapshot(pairs: list[tuple[str, str]], reader: Optional[Callable[[str], Optional[str]]] = None) -> dict:

@@ -228,7 +228,11 @@ def run(rt: Runtime, rest: list[str], out: Callable[[str], None] = print) -> str
 
     gateway_before = duel.gateway_running()
     with ThreadPoolExecutor(max_workers=max(1, a.parallel)) as pool:
-        list(pool.map(one, jobs))
+        try:
+            list(pool.map(one, jobs))
+        except BaseException:  # Ctrl+C: kill the duels' children, or the pool waits for every one of them
+            duel.stop_children()
+            raise
     all_rows = list(csv.DictReader(open(csv_path, encoding="utf-8")))
     summary = summarize(all_rows, item.floor, item.ask)
     n = summary.get("lp", summary.get("stock", {})).get("duels", 0)

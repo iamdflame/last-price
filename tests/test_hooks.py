@@ -160,7 +160,8 @@ def test_chat_deals_only_on_opened_platforms_and_never_for_owners(tmp_path):
     rt.store.backend.set("shop_platforms", ["telegram"])
     rt.store.add_owner("telegram:7")
     assert pre_llm(session_id="tg-2", user_message="300?", platform="telegram", sender_id="7") is None
-    assert "context" in pre_llm(session_id="tg-3", user_message="300?", platform="telegram", sender_id="42")
+    assert "context" in pre_llm(session_id="tg-3", user_message="300?", platform="telegram", sender_id="42",
+                                is_first_turn=True)
 
 
 def test_offer_above_the_ask_is_refused_as_a_bundle(tmp_path):

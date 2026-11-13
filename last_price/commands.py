@@ -26,7 +26,7 @@ USAGE = """Usage: /lastprice <command>  (or: hermes lastprice <command>)
   bench [--duels N] [--budgets LO-HI] [--parallel P]   many duels, both sellers (terminal only)
   report [--duel ID] [--last N]   each deal turn: the draft beside what was sent
   reveal <item>            the floor and salt, checked against the commitment (terminal only)
-  owner add <platform>:<user_id> | shop on|off <platform>   (terminal only)
+  owner add <platform>:<user_id> | shop on|off <platform> | shop release   (terminal only)
   doctor                   the seller model, the buyer, the state file, the hosts contacted
   challenge start <item> | challenge board [--out docs/challenge/board.md] | challenge end   (terminal only)
                            a public "buy it below my floor" challenge on Telegram"""
@@ -169,6 +169,10 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
                 return f"Owner added: {rest[1]}"
             return "Usage: owner add <platform>:<user_id>"
         if cmd == "shop":
+            if rest == ["release"]:
+                if not local:
+                    return Refusal("Release held chats from a terminal: hermes lastprice shop release")
+                return challenge.release(rt)
             if len(rest) == 2 and rest[0] in ("on", "off") and re.fullmatch(r"[a-z0-9_]+", rest[1]):
                 if not local:
                     return Refusal("Change shop platforms from a terminal.")
@@ -180,7 +184,7 @@ def run(rt: Runtime, text: str, *, platform: str = "cli", source: Any = None,
                 (plats.add if rest[0] == "on" else plats.discard)(rest[1])
                 rt.store.backend.set("shop_platforms", sorted(plats))
                 return f"Shop platforms: {', '.join(sorted(plats)) or 'none'} (non-owner chats there haggle)."
-            return "Usage: shop on|off <platform>"
+            return "Usage: shop on|off <platform> | shop release"
         if cmd == "report":
             ap = argparse.ArgumentParser(prog="report", add_help=False)
             ap.add_argument("--duel")
@@ -308,11 +312,16 @@ def doctor(rt: Runtime) -> str:
                      | ({rec["platform"]} if rec and not rec.get("ended") else set()))
     if open_to and not allowed:
         lines.append(f"  stranger chats on {', '.join(open_to)}: HELD while memory is on: each turn gets "
-                     f"\"{challenge.HELD}\" and no model call. Turn memory off, then restart the gateway: a chat "
-                     "held while memory was on stays held until it restarts.")
+                     f"\"{challenge.HELD}\" and no model call.")
     elif open_to:
-        lines.append(f"  stranger chats on {', '.join(open_to)}: memory is checked again on each turn (a reading at "
-                     f"most {challenge.GATE_TTL:g} s old), and a turn is held while it is on.")
+        lines.append(f"  stranger chats on {', '.join(open_to)}: memory is checked again on each turn, read as "
+                     "config.yaml is now, and a turn is held while it is on.")
+    try:
+        held = len(challenge.holds(rt)["held"])
+    except Exception:
+        held = None
+    if held != 0 or (open_to and not allowed):
+        lines.append(f"  held stranger chats: {'unknown' if held is None else held}. " + challenge.RELEASE_HOWTO)
     if rec:
         lines.append(f"  challenge: {rec['id']} on {rec['platform']} ({'ended' if rec.get('ended') else 'LIVE'}), item "
                      f"{rec['item']}; `hermes lastprice challenge board` writes the public board")

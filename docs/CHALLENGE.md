@@ -13,7 +13,7 @@ the board will be published at `docs/challenge/board.md`.
 Hermes loads a profile's memory (`MEMORY.md`, `USER.md`) and any memory provider into every chat in it, a
 stranger's too, and Last Price's check only looks at prices. So `challenge start` (and `shop on`) refuse unless
 `memory.memory_enabled` and `memory.user_profile_enabled` are false and no `memory.provider` is set. It reads them
-with `hermes config get`; if Hermes cannot report one, it refuses. Memory can be switched on after `shop on` or `challenge start`, so every turn of a stranger's deal chat (shop or challenge) checks again before any model call: in the gateway's own process, through Hermes's public `hermes_cli.config.load_config()`, with a reading at most 10 s old. While memory is on, or cannot be read, the buyer gets "The shop is paused for now. Please try again later." and the turn makes no model call (the `pre_llm_call` block Hermes documents). A chat held once stays held until the gateway restarts, because Hermes keeps that chat's agent, built while memory was on. `doctor` says when stranger chats are held. Two limits: a turn that starts within 10 s of memory being switched on can still run with it, and a chat Last Price does not take as a deal chat (an owner's, or any chat while `shop on` has no open item to sell) is an ordinary Hermes chat. Make a profile used
+with `hermes config get`; if Hermes cannot report one, it refuses. Memory can be switched on after `shop on` or `challenge start`, so every turn of a stranger's deal chat (shop or challenge) checks again before any model call: in the gateway's own process, through Hermes's public `hermes_cli.config.load_config()`, read on every turn as config.yaml is then (Hermes re-reads the file whenever it changes). While memory is on, or cannot be read, the buyer gets "The shop is paused for now. Please try again later." and the turn makes no model call (the `pre_llm_call` block Hermes documents). Hermes saves a chat's system prompt on its first turn and replays it on every later turn, across gateway restarts, so a chat that was held, or that Last Price first sees past its first turn (begun under an earlier version, or as an ordinary chat; a chat Hermes compressed into a new session keeps its parent's state), may carry your memory in that prompt: it stays held, recorded in plugin state, until you release it with memory off: `hermes -p shop gateway stop`, `hermes -p shop lastprice shop release`, `hermes -p shop gateway`. `shop release` refuses while memory is on or the gateway runs (a running gateway keeps each chat's agent as it was built) and runs `hermes sessions refresh-prompts`, so Hermes rebuilds each chat's prompt, without memory, before its next turn. `doctor` counts held chats and prints these steps. Two limits: a chat whose first turn starts at the moment memory is switched off (between Hermes building its prompt and the check) can run with it, and a chat Last Price does not take as a deal chat (an owner's, or any chat while `shop on` has no open item to sell) is an ordinary Hermes chat. Make a profile used
 for nothing else:
 
 ```
@@ -109,9 +109,9 @@ hermes lastprice challenge board          # now with the floor, the salt and the
 After `end`, every challenge chat gets "The Last Price challenge has ended…" and no model turn runs. `end`
 puts each of the six settings back to the value saved at `start`, through `hermes config set` (or `hermes
 config unset` for a key that was not set before), and prints each line; a key that held a `${VAR}` reference
-gets the reference back. `challenge end --no-configure` prints those commands instead of running them. On
-Windows, Hermes's own `config set`/`unset` rewrite config.yaml with CRLF line endings, so after `end` it can
-differ from before in line endings only.
+gets the reference back. `challenge end --no-configure` prints those commands instead of running them. Hermes's own `config set`/`unset` rewrite config.yaml in their own style (CRLF line endings on Windows; a
+`${VAR}` entry comes back quoted, `- '${LP_ADMIN_ID}'`), so after `end` it can
+differ from before in formatting only (line endings, quoting).
 
 ## What is tested, and what still needs a human buyer
 

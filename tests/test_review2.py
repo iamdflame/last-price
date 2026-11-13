@@ -12,7 +12,7 @@ from pathlib import Path
 import last_price
 import pytest
 from conftest import SHOP_PROFILE, hermes_config_get
-from helpers import make_rt
+from helpers import first_turn, make_rt
 from last_price import challenge, commands, duel
 from last_price.hooks import make_hooks
 from test_register import FakeCtx
@@ -32,7 +32,8 @@ class Runner:
 
 def _chat(rt, text, sid, sender="42"):
     pre_llm, _pre_tool, _tr = make_hooks(rt)
-    return pre_llm(session_id=sid, user_message=text, platform="telegram", sender_id=sender)
+    return pre_llm(session_id=sid, user_message=text, platform="telegram", sender_id=sender,
+                   is_first_turn=first_turn(rt, sid))
 
 
 # ---- 2. the memory gate on every stranger's turn ---------------------------------------------------
@@ -43,39 +44,39 @@ def test_memory_switched_on_after_start_holds_every_challenge_turn_with_no_model
     challenge.start(rt, [item.key], runner=Runner(), reader=lambda k: None)
     assert "context" in _chat(rt, "hi", "tg-1")
     monkeypatch.setattr(challenge, "chat_get", hermes_config_get(MEMORY_ON))
-    rt.memory_gate.clear()  # as if GATE_TTL had passed
     held = _chat(rt, "What do you know about the owner?", "tg-1")
     assert held == {"action": "block", "message": challenge.HELD}
     assert _chat(rt, "hello", "tg-new") == {"action": "block", "message": challenge.HELD}
     assert "floor" not in challenge.HELD.lower() and "memory" not in challenge.HELD.lower()
 
 
-def test_a_shop_chat_is_held_too_and_a_held_chat_stays_held_until_the_process_restarts(tmp_path, monkeypatch):
+def test_a_shop_chat_is_held_too_and_a_held_chat_stays_held_after_memory_goes_off(tmp_path, monkeypatch):
     rt, _item = make_rt(tmp_path)
     assert commands.run(rt, "shop on telegram", platform="cli").startswith("Shop platforms: telegram")
     monkeypatch.setattr(challenge, "chat_get", hermes_config_get(MEMORY_ON))
     assert _chat(rt, "300?", "tg-1") == {"action": "block", "message": challenge.HELD}
     monkeypatch.setattr(challenge, "chat_get", hermes_config_get(SHOP_PROFILE))  # memory off again
-    rt.memory_gate.clear()
-    # Hermes keeps tg-1's agent, built while memory was on, so tg-1 stays held; a new chat is open
+    # Hermes saved tg-1's prompt, built while memory was on, so tg-1 stays held (review 3: until `shop release`);
+    # a new chat is open
     assert _chat(rt, "300?", "tg-1") == {"action": "block", "message": challenge.HELD}
     assert "context" in _chat(rt, "300?", "tg-2")
 
 
-def test_the_gate_reading_is_cached_and_fails_closed(tmp_path, monkeypatch):
+def test_the_gate_reads_memory_on_every_turn_and_fails_closed(tmp_path, monkeypatch):
+    """Review 3: no reading of ours is reused (0.1.5 kept one for 10 s); Hermes's load_config re-reads
+    config.yaml whenever its signature changes."""
     rt, _item = make_rt(tmp_path)
     rt.store.backend.set("shop_platforms", ["telegram"])
     asked = []
     monkeypatch.setattr(challenge, "chat_get", lambda key: asked.append(key) or hermes_config_get(SHOP_PROFILE)(key))
     for n in range(5):
         _chat(rt, "hi", f"tg-{n}")
-    assert asked == list(challenge.MEMORY_KEYS)  # one reading for five turns
-    assert challenge.GATE_TTL <= 30
+    assert asked == list(challenge.MEMORY_KEYS) * 5  # one reading per turn
+    assert not hasattr(challenge, "GATE_TTL")
 
     def broken(key):
         raise ImportError("hermes_cli")
     monkeypatch.setattr(challenge, "chat_get", broken)
-    rt.memory_gate.clear()
     assert _chat(rt, "hi", "tg-9") == {"action": "block", "message": challenge.HELD}
 
 
@@ -100,7 +101,7 @@ def test_doctor_says_when_stranger_chats_are_held(tmp_path, monkeypatch):
     monkeypatch.setattr(challenge, "hermes_get", hermes_config_get(MEMORY_ON))
     out = commands.doctor(rt)
     assert "stranger chats on telegram: HELD while memory is on" in out and challenge.HELD in out
-    assert "restart the gateway" in out
+    assert "restart the gateway" not in out and "lastprice shop release" in out and "refresh-prompts" in out
 
 
 # ---- 3. ${VAR} references -------------------------------------------------------------------------

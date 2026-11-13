@@ -1,5 +1,5 @@
 name: last-price
-version: "0.1.5"
+version: "0.1.6"
 description: "Lets Hermes haggle with buyers in chat while the plugin, not the model, owns every price that leaves: floors are set only by the owner's /lastprice or `hermes lastprice` command, kept in plugin state, and never shown to the model; every deal reply is held and checked, and one offering less is rewritten before anyone sees it. Includes `hermes lastprice duel --vs-prompt`, a side-by-side against a seller with the floor in its prompt."
 author: "iamdflame"
 license: MIT

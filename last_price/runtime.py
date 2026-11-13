@@ -62,21 +62,30 @@ def _session_title(session_id: str) -> tuple[Optional[str], Optional[str]]:
     return db.get_session_title(session_id), db.get_session_title_source(session_id)
 
 
+def _session_parent(session_id: str) -> Optional[str]:
+    """The session this one continues (a compression continuation's parent), through the public
+    ``hermes_state.SessionDB`` (read-only)."""
+    from hermes_state import SessionDB
+
+    row = SessionDB(read_only=True).get_session(session_id) or {}
+    return row.get("parent_session_id") or None
+
+
 class Runtime:
     def __init__(self, backend: Any, *, data_dir: Optional[Path] = None, llm: Any = None,
                  llm_factory: Optional[Callable[[], Any]] = None,
-                 title_lookup: Optional[Callable[[str], tuple[Optional[str], Optional[str]]]] = None) -> None:
+                 title_lookup: Optional[Callable[[str], tuple[Optional[str], Optional[str]]]] = None,
+                 parent_lookup: Optional[Callable[[str], Optional[str]]] = None) -> None:
         self.store = Store(backend)
         self.data_dir = Path(data_dir) if data_dir else None
         self.ledger = Ledger(self.data_dir / "ledger.jsonl" if self.data_dir else None)
         self.llm_value = llm
         self.llm_factory = llm_factory
         self.title_lookup = title_lookup or _session_title
+        self.parent_lookup = parent_lookup or _session_parent  # challenge.chat_allowed: a compressed chat's lineage
         self._deals: dict[str, tuple[Optional[Deal], float]] = {}
         self._lock = threading.Lock()
         self.has_capability: Optional[Callable[[str], bool]] = None  # ctx.has_capability, when Hermes gives one
-        self.memory_gate: dict = {}  # challenge.gate_open: {profile home: (memory off?, when read)}
-        self.memory_held: set[str] = set()  # stranger chats held while memory was on (challenge.chat_allowed)
 
     @property
     def llm(self) -> Any:

@@ -37,6 +37,15 @@ def make_rt(tmp_path, *, floor=361.0, ask=420.0, llm=None, extras=("a case",), t
     return rt, item
 
 
+def first_turn(rt, sid):
+    """Hermes's ``is_first_turn`` for a chat test: True the first time ``sid`` takes a turn (Hermes passes
+    True when the session has no history yet; a held turn still leaves its withheld row)."""
+    seen = rt.__dict__.setdefault("_test_turns", set())
+    first = sid not in seen
+    seen.add(sid)
+    return first
+
+
 def open_duel(rt, item, arm="lp", sid="local-abc"):
     rec = rt.store.new_duel(item.key, ["stock", "lp"])
     rt.title_lookup = lambda s: ({sid: rec["arms"][arm]["title"]}.get(s), "user")
